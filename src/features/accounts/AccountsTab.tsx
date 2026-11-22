@@ -1,6 +1,6 @@
 import { dateLocale, tr } from '@/i18n'
 import { formatDistanceToNowStrict } from 'date-fns'
-import { Calculator, KeyRound, Plus, RefreshCw, Trash2 } from 'lucide-react'
+import { Calculator, Cpu, KeyRound, Plus, RefreshCw, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/controls'
@@ -9,6 +9,7 @@ import { toast } from '@/components/ui/toastStore'
 import { cloudEnabled } from '@/cloud/client'
 import type { AccountRow } from '@/cloud/rows'
 import {
+  pullNow,
   chooseOffline,
   deleteAccount,
   recalculate,
@@ -19,6 +20,7 @@ import {
 } from '@/cloud/store'
 import { formatCurrency, parseNum } from '@/lib/format'
 import { ConnectWizard } from './ConnectWizard'
+import { PasswordConnect } from './PasswordConnect'
 import { StatusChip } from './StatusChip'
 
 export function CloudRequired() {
@@ -53,6 +55,7 @@ function AccountCard({ a, onNewKey }: { a: AccountRow; onNewKey: () => void }) {
   const [start, setStart] = useState(a.starting_balance === null ? '' : String(a.starting_balance))
   const [busy, setBusy] = useState<string | null>(null)
   const [confirmDelete, setConfirmDelete] = useState(false)
+  const pw = a.connection_type === 'metaapi'
 
   const run = async (what: string, fn: () => Promise<unknown>, done: string) => {
     setBusy(what)
@@ -84,12 +87,28 @@ function AccountCard({ a, onNewKey }: { a: AccountRow; onNewKey: () => void }) {
           />
           <p className="text-xs text-muted">
             {a.broker}
-            {a.login ? ` · ${a.login} · ${a.server}` : ' · not connected yet'}
-            {a.ea_version ? ` · EA ${a.ea_version}` : ''}
+            {a.login ? ` · ${a.login} · ${a.server}` : ` · ${tr('acct.notConnected')}`}
+            {' · '}
+            {pw
+              ? tr('acc.viaPassword')
+              : `${tr('acc.viaEa')}${a.ea_version ? ` ${a.ea_version}` : ''}`}
           </p>
         </div>
         <StatusChip account={a} />
       </div>
+      {pw && a.connection_state === 'error' && a.connection_error && (
+        <p
+          role="alert"
+          className="mt-3 rounded-[var(--radius-sm)] bg-neg/10 px-3 py-2 text-xs text-neg"
+        >
+          {a.connection_error}
+        </p>
+      )}
+      {pw && a.investor_mode === false && (
+        <p className="mt-3 rounded-[var(--radius-sm)] bg-accent/10 px-3 py-2 text-xs">
+          {tr('acc.masterWarning')}
+        </p>
+      )}
 
       <dl className="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
         <div>
@@ -135,14 +154,36 @@ function AccountCard({ a, onNewKey }: { a: AccountRow; onNewKey: () => void }) {
           />
         </label>
         <div className="ml-auto flex flex-wrap gap-2">
-          <Button
-            size="sm"
-            icon={<RefreshCw />}
-            disabled={busy !== null}
-            onClick={() => void run('resync', () => requestResync(a.id), tr('acc.resyncDone'))}
-          >
-            {tr('acc.resync')}
-          </Button>
+          {pw ? (
+            <Button
+              size="sm"
+              icon={<RefreshCw />}
+              disabled={busy !== null}
+              onClick={() =>
+                void run(
+                  'pull',
+                  () =>
+                    pullNow(a.id).then(
+                      (r) =>
+                        r.state === 'connected' &&
+                        toast(tr('acc.syncDone', { n: r.newDeals ?? 0 })),
+                    ),
+                  tr('acc.syncNow'),
+                )
+              }
+            >
+              {tr('acc.syncNow')}
+            </Button>
+          ) : (
+            <Button
+              size="sm"
+              icon={<RefreshCw />}
+              disabled={busy !== null}
+              onClick={() => void run('resync', () => requestResync(a.id), tr('acc.resyncDone'))}
+            >
+              {tr('acc.resync')}
+            </Button>
+          )}
           <Button
             size="sm"
             icon={<Calculator />}
@@ -160,9 +201,11 @@ function AccountCard({ a, onNewKey }: { a: AccountRow; onNewKey: () => void }) {
           >
             {busy === 'recalc' ? tr('acc.recalculating') : tr('acc.recalc')}
           </Button>
-          <Button size="sm" icon={<KeyRound />} onClick={onNewKey}>
-            {tr('acc.newKeyBtn')}
-          </Button>
+          {!pw && (
+            <Button size="sm" icon={<KeyRound />} onClick={onNewKey}>
+              {tr('acc.newKeyBtn')}
+            </Button>
+          )}
           <Button
             size="sm"
             variant="quiet"
@@ -174,7 +217,7 @@ function AccountCard({ a, onNewKey }: { a: AccountRow; onNewKey: () => void }) {
         </div>
       </div>
 
-      {keys.length > 0 && (
+      {!pw && keys.length > 0 && (
         <ul className="mt-4 divide-hairline border-t hairline text-xs">
           {keys.map((k) => (
             <li key={k.id} className="flex items-center gap-3 py-2">
@@ -224,15 +267,65 @@ function AccountCard({ a, onNewKey }: { a: AccountRow; onNewKey: () => void }) {
 export function AccountsTab() {
   const status = useCloud((s) => s.status)
   const accounts = useCloud((s) => s.accounts)
-  const [wizard, setWizard] = useState<{ accountId?: string } | null>(null)
+  const [wizard, setWizard] = useState<{ accountId?: string; method?: 'password' | 'ea' } | null>(
+    null,
+  )
   if (status !== 'signed-in') return <CloudRequired />
+  if (wizard && !wizard.accountId && !wizard.method)
+    return (
+      <section>
+        <h3 className="mb-4 text-base font-semibold tracking-tight">{tr('wiz.methodTitle')}</h3>
+        <div className="grid gap-3 sm:grid-cols-2">
+          <button
+            type="button"
+            onClick={() => setWizard({ method: 'password' })}
+            className="lift relative flex flex-col gap-2 rounded-[var(--radius-sm)] border border-accent/50 bg-accent/5 p-4 text-left"
+          >
+            <span className="flex items-center justify-between gap-2">
+              <span className="grid size-9 place-items-center rounded-xl bg-accent/15 text-accent">
+                <KeyRound className="size-4" />
+              </span>
+              <span className="rounded-full bg-accent/15 px-2 py-0.5 text-[0.65rem] font-semibold text-accent">
+                {tr('wiz.recommended')}
+              </span>
+            </span>
+            <span className="font-semibold">{tr('wiz.methodPassword')}</span>
+            <span className="text-sm text-muted">{tr('wiz.methodPasswordBody')}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setWizard({ method: 'ea' })}
+            className="lift relative flex flex-col gap-2 rounded-[var(--radius-sm)] border border-line/10 p-4 text-left hover:border-line/25"
+          >
+            <span className="grid size-9 place-items-center rounded-xl bg-line/8 text-muted">
+              <Cpu className="size-4" />
+            </span>
+            <span className="font-semibold">{tr('wiz.methodEa')}</span>
+            <span className="text-sm text-muted">{tr('wiz.methodEaBody')}</span>
+          </button>
+        </div>
+        <div className="mt-4 flex justify-start">
+          <Button variant="quiet" onClick={() => setWizard(null)}>
+            {tr('common.back')}
+          </Button>
+        </div>
+      </section>
+    )
   if (wizard)
     return (
       <section>
         <h3 className="mb-4 text-base font-semibold tracking-tight">
-          {wizard.accountId ? tr('acc.newKey') : tr('acc.connect')}
+          {wizard.accountId
+            ? tr('acc.newKey')
+            : wizard.method === 'password'
+              ? tr('wiz.methodPassword')
+              : tr('wiz.methodEa')}
         </h3>
-        <ConnectWizard accountId={wizard.accountId} onDone={() => setWizard(null)} />
+        {wizard.method === 'password' ? (
+          <PasswordConnect onDone={() => setWizard(null)} />
+        ) : (
+          <ConnectWizard accountId={wizard.accountId} onDone={() => setWizard(null)} />
+        )}
       </section>
     )
   return (

@@ -293,6 +293,16 @@ function teardown() {
 
 // ---------------------------------------------------------------- API (server functions)
 
+export class ApiError extends Error {
+  readonly status: number
+  readonly code?: string
+  constructor(message: string, status: number, code?: string) {
+    super(message)
+    this.status = status
+    this.code = code
+  }
+}
+
 async function api<T>(path: string, body: unknown): Promise<T> {
   const { data } = await db().auth.getSession()
   const token = data.session?.access_token
@@ -302,8 +312,9 @@ async function api<T>(path: string, body: unknown): Promise<T> {
     headers: { 'content-type': 'application/json', authorization: `Bearer ${token}` },
     body: JSON.stringify(body),
   })
-  const json = (await res.json().catch(() => ({}))) as { error?: string } & T
-  if (!res.ok) throw new Error(json.error ?? `Request failed (${res.status})`)
+  const json = (await res.json().catch(() => ({}))) as { error?: string; error_code?: string } & T
+  if (!res.ok)
+    throw new ApiError(json.error ?? `Request failed (${res.status})`, res.status, json.error_code)
   return json
 }
 
@@ -385,8 +396,14 @@ export async function updateAccount(
 }
 
 export async function deleteAccount(id: string) {
-  const { error } = await db().from('accounts').delete().eq('id', id)
-  fail(error, 'Delete account')
+  const acc = get().accounts.find((a) => a.id === id)
+  if (acc?.connection_type === 'metaapi') {
+    // Stops the cloud terminal too; the server deletes the row.
+    await api('/api/accounts/disconnect', { account_id: id })
+  } else {
+    const { error } = await db().from('accounts').delete().eq('id', id)
+    fail(error, 'Delete account')
+  }
   set((s) => ({
     accounts: s.accounts.filter((a) => a.id !== id),
     trades: s.trades.filter((t) => t.accountId !== id),
@@ -513,4 +530,41 @@ export async function importLocalTrades(local: Trade[]): Promise<number> {
   await insertManualTrades(prepared, 'manual')
   await saveProfile({ settings: { localImported: true } })
   return prepared.length
+}
+
+// ---------------------------------------------------------------- password connection (MetaApi)
+
+export type ConnectResponse = { status: 'created' } | { status: 'pending'; retry_after: number }
+export type PullResponse =
+  | { state: 'connecting' }
+  | { state: 'error'; error: string }
+  | {
+      state: 'connected'
+      newDeals?: number
+      trades?: number
+      balance?: number
+      throttled?: boolean
+    }
+
+/** 32 random letters/digits: lets the server retry account creation idempotently. */
+export function newTransactionId(): string {
+  const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+  const bytes = crypto.getRandomValues(new Uint8Array(32))
+  return Array.from(bytes, (b) => chars[b % chars.length]).join('')
+}
+
+export function connectWithPassword(
+  accountId: string,
+  creds: { login: string; password: string; server: string; name?: string },
+  transactionId: string,
+) {
+  return api<ConnectResponse>('/api/accounts/connect', {
+    account_id: accountId,
+    ...creds,
+    transaction_id: transactionId,
+  })
+}
+
+export function pullNow(accountId: string) {
+  return api<PullResponse>('/api/accounts/pull', { account_id: accountId })
 }

@@ -341,7 +341,7 @@ export const uz: Messages = {
   'auth.confirm': '{email} pochtasini oching va hisobni havola orqali tasdiqlang.',
   'auth.linkSent': 'Kirish havolasi {email} ga yuborildi. Uni shu qurilmada oching.',
   'auth.noPassword':
-    'MT5 parolingiz hech qachon soʻralmaydi va saqlanmaydi. Terminal savdolarni bekor qilinadigan sinxronlash kaliti bilan yuboradi.',
+    'MT5 ni investor paroli (faqat oʻqish) bilan ulang: TradeDesk savdolarni koʻradi, lekin hech qachon savdo qila olmaydi.',
   'auth.offline': 'Hisobsiz shu qurilmada davom etish',
 
   'acct.view': 'Koʻrsatish',
@@ -572,4 +572,39 @@ export const uz: Messages = {
   'calc.netPnl': 'Sof P&L',
   'calc.gross': 'Yalpi',
   'calc.enterExit': 'Kirish, chiqish va lot hajmini kiriting.',
+  'wiz.methodTitle': 'Qanday ulamoqchisiz?',
+  'wiz.recommended': 'Tavsiya etiladi',
+  'wiz.methodPassword': 'Hisob raqami va parol',
+  'wiz.methodPasswordBody':
+    'Eng oson yoʻli: MT5 hisob raqami, investor paroli (faqat oʻqish) va serverni kiriting. Hech narsa oʻrnatish shart emas, MT5 ochiq turishi kerak emas.',
+  'wiz.methodEa': 'Expert Advisor (advanced)',
+  'wiz.methodEaBody':
+    'Oʻz terminalingizga kichik maslahatchi (faqat oʻqish) oʻrnating. Parol kompyuteringizdan chiqmaydi, lekin MT5 ishlab turishi kerak.',
+  'wiz.login': 'Hisob raqami (login)',
+  'wiz.investorPassword': 'Investor paroli (faqat oʻqish)',
+  'wiz.server': 'Server',
+  'wiz.serverHint': 'MT5 dagidek aniq, masalan XMGlobal-MT5 7',
+  'wiz.investorHint':
+    'Asosiy emas, investor parolidan foydalaning: u bilan TradeDesk faqat savdolarni oʻqiy oladi, hech qachon savdo qila olmaydi. MT5 da yaratish: Servis → Sozlamalar → Server → Oʻzgartirish → Investor paroli.',
+  'wiz.passwordSafety':
+    'Parol bir marta HTTPS orqali MetaApi — MT5 bulut ulagichiga yuboriladi va TradeDesk da saqlanmaydi.',
+  'wiz.connectBtn': 'Hisobni ulash',
+  'wiz.detecting': 'Broker sozlamalari aniqlanmoqda…',
+  'wiz.starting': 'Faqat oʻqish ulanishi ishga tushirilmoqda…',
+  'wiz.importing': 'Savdo tarixi yuklanmoqda…',
+  'wiz.connectedPw':
+    '{server} serveridagi {login} ga ulandi. Balans {balance}. Tarix yuklandi, yangi savdolar avtomatik paydo boʻladi.',
+  'wiz.slow':
+    'Bu odatdagidan uzoqroq davom etmoqda. Oynani yopishingiz mumkin: ulanish davom etadi va savdolar oʻzi paydo boʻladi.',
+  'wiz.errAuth':
+    'Bu server uchun hisob raqami yoki parol notoʻgʻri. Investor parolidan foydalaning.',
+  'wiz.errServer':
+    'Server topilmadi. MT5 dagi aniq server nomini kiriting (masalan, XMGlobal-MT5 7).',
+  'wiz.errNotConfigured': 'Saytda parol orqali ulanish hali yoqilmagan.',
+  'acc.viaPassword': 'Hisob raqami va parol (faqat oʻqish)',
+  'acc.viaEa': 'Expert Advisor',
+  'acc.syncNow': 'Hozir sinxronlash',
+  'acc.syncDone': 'Yangilandi: {n} ta yangi bitim',
+  'acc.masterWarning':
+    'Asosiy parol bilan ulangan. Faqat oʻqish uchun investor paroli bilan qayta ulang.',
 }

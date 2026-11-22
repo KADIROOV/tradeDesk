@@ -17,6 +17,12 @@ export interface AccountRow {
   ea_version: string | null
   resync_requested_at: string | null
   created_at: string
+  connection_type: 'ea' | 'metaapi'
+  metaapi_account_id: string | null
+  connection_state: 'connecting' | 'connected' | 'error' | 'disconnected' | null
+  connection_error: string | null
+  investor_mode: boolean | null
+  last_pull_at: string | null
 }
 
 export interface SyncKeyRow {
@@ -82,7 +88,7 @@ export interface CashDealRow {
 }
 
 export const ACCOUNT_COLUMNS =
-  'id, user_id, name, broker, server, login, currency, leverage, starting_balance, balance, equity, last_sync_at, last_heartbeat_at, ea_version, resync_requested_at, created_at'
+  'id, user_id, name, broker, server, login, currency, leverage, starting_balance, balance, equity, last_sync_at, last_heartbeat_at, ea_version, resync_requested_at, created_at, connection_type, metaapi_account_id, connection_state, connection_error, investor_mode, last_pull_at'
 export const KEY_COLUMNS = 'id, account_id, key_prefix, label, created_at, last_used_at, revoked_at'
 
 const num = (v: number | string | null | undefined): number | undefined =>

@@ -353,7 +353,7 @@ export const en = {
   'auth.confirm': 'Check {email} and click the link to confirm your account.',
   'auth.linkSent': 'We sent a sign-in link to {email}. Open it on this device.',
   'auth.noPassword':
-    'Your MT5 password is never asked for or stored. The terminal sends trades with a revocable sync key.',
+    'Connect MT5 with your investor (read-only) password: TradeDesk can see your trades but can never trade.',
   'auth.offline': 'Continue on this device without an account',
 
   // account switcher / status
@@ -592,6 +592,41 @@ export const en = {
   'calc.netPnl': 'Net P&L',
   'calc.gross': 'Gross',
   'calc.enterExit': 'Enter entry, exit and lot size.',
+  'wiz.methodTitle': 'How do you want to connect?',
+  'wiz.recommended': 'Recommended',
+  'wiz.methodPassword': 'Account number & password',
+  'wiz.methodPasswordBody':
+    'Easiest: enter your MT5 account number, investor (read-only) password and server. Nothing to install, MT5 does not need to stay open.',
+  'wiz.methodEa': 'Expert Advisor (advanced)',
+  'wiz.methodEaBody':
+    'Install a small read-only EA in your own terminal. No password leaves your PC, but MT5 must be running.',
+  'wiz.login': 'Account number (login)',
+  'wiz.investorPassword': 'Investor password (read-only)',
+  'wiz.server': 'Server',
+  'wiz.serverHint': 'Exactly as shown in MT5, e.g. XMGlobal-MT5 7',
+  'wiz.investorHint':
+    'Use the investor password, not the main one: with it TradeDesk can only read trades and can never trade. Create it in MT5: Tools → Options → Server → Change → Investor password.',
+  'wiz.passwordSafety':
+    'The password is sent once over HTTPS to MetaApi, the cloud MT5 connector, and is never stored by TradeDesk.',
+  'wiz.connectBtn': 'Connect account',
+  'wiz.detecting': 'Detecting broker settings…',
+  'wiz.starting': 'Starting the read-only connection…',
+  'wiz.importing': 'Importing your trading history…',
+  'wiz.connectedPw':
+    'Connected to {login} on {server}. Balance {balance}. Your history has been imported and new trades will appear automatically.',
+  'wiz.slow':
+    'This is taking longer than usual. You can close this window: the connection keeps starting and trades will appear on their own.',
+  'wiz.errAuth':
+    'Wrong account number or password for this server. Use the investor (read-only) password.',
+  'wiz.errServer':
+    'Server not found. Enter the exact server name shown in MT5 (e.g. XMGlobal-MT5 7).',
+  'wiz.errNotConfigured': 'Password connection is not switched on for this site yet.',
+  'acc.viaPassword': 'Account number & password (read-only)',
+  'acc.viaEa': 'Expert Advisor',
+  'acc.syncNow': 'Sync now',
+  'acc.syncDone': 'Up to date: {n} new deals',
+  'acc.masterWarning':
+    'Connected with the main password. Reconnect with the investor password for read-only access.',
 } as const
 
 export type MsgKey = keyof typeof en

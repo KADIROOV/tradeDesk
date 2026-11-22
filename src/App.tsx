@@ -14,6 +14,7 @@ import { useSettings } from '@/store/settings'
 import { useUi, type Route } from '@/store/ui'
 import { setLanguage, tr } from '@/i18n'
 import { useProfileSync } from '@/cloud/profileSync'
+import { useAutoPull } from '@/cloud/useAutoPull'
 import { initCloud, useCloud } from '@/cloud/store'
 import { AuthScreen } from '@/features/auth/AuthScreen'
 import { ImportLocalBanner } from '@/features/accounts/ImportLocalBanner'
@@ -56,6 +57,7 @@ export default function App() {
   const offline = useCloud((s) => s.offline)
   useGlobalShortcuts()
   useProfileSync()
+  useAutoPull()
   useEffect(() => initCloud(), [])
   const Page = PAGES[route]
   // Session guard: when sync is configured, sign in first (or explicitly choose on-device mode).
