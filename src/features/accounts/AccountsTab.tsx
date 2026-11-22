@@ -1,3 +1,4 @@
+import { dateLocale, tr } from '@/i18n'
 import { formatDistanceToNowStrict } from 'date-fns'
 import { Calculator, KeyRound, Plus, RefreshCw, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
@@ -25,16 +26,12 @@ export function CloudRequired() {
   return (
     <EmptyState
       icon={<KeyRound />}
-      title={cloudEnabled ? 'Sign in to connect MT5' : 'Sync is not set up on this site'}
-      body={
-        cloudEnabled
-          ? 'Accounts, automatic MT5 sync and cross-device settings need an account. Your on-device journal keeps working either way.'
-          : 'The site owner has not configured Supabase yet. Everything else works on this device.'
-      }
+      title={cloudEnabled ? tr('acc.signInTitle') : tr('acc.notSetUpTitle')}
+      body={cloudEnabled ? tr('acc.signInBody') : tr('acc.notSetUpBody')}
       action={
         cloudEnabled && signedOut ? (
           <Button variant="primary" onClick={() => chooseOffline(false)}>
-            Sign in or create account
+            {tr('acc.signInBtn')}
           </Button>
         ) : undefined
       }
@@ -43,7 +40,9 @@ export function CloudRequired() {
 }
 
 function ago(iso: string | null) {
-  return iso ? formatDistanceToNowStrict(new Date(iso), { addSuffix: true }) : 'never'
+  return iso
+    ? formatDistanceToNowStrict(new Date(iso), { addSuffix: true, locale: dateLocale() })
+    : tr('common.never')
 }
 
 function AccountCard({ a, onNewKey }: { a: AccountRow; onNewKey: () => void }) {
@@ -61,7 +60,7 @@ function AccountCard({ a, onNewKey }: { a: AccountRow; onNewKey: () => void }) {
       await fn()
       toast(done)
     } catch (e) {
-      toast(e instanceof Error ? e.message : 'Something went wrong', 'info')
+      toast(e instanceof Error ? e.message : tr('common.somethingWrong'), 'info')
     } finally {
       setBusy(null)
     }
@@ -74,13 +73,13 @@ function AccountCard({ a, onNewKey }: { a: AccountRow; onNewKey: () => void }) {
           <input
             className="w-full rounded-md bg-transparent text-base font-semibold outline-none focus-visible:ring-2 focus-visible:ring-accent"
             value={name}
-            aria-label="Account name"
+            aria-label={tr('acc.name')}
             maxLength={80}
             onChange={(e) => setName(e.target.value)}
             onBlur={() =>
               name.trim() &&
               name !== a.name &&
-              void run('name', () => updateAccount(a.id, { name: name.trim() }), 'Renamed')
+              void run('name', () => updateAccount(a.id, { name: name.trim() }), tr('acc.renamed'))
             }
           />
           <p className="text-xs text-muted">
@@ -94,34 +93,34 @@ function AccountCard({ a, onNewKey }: { a: AccountRow; onNewKey: () => void }) {
 
       <dl className="mt-4 grid grid-cols-2 gap-3 text-sm sm:grid-cols-4">
         <div>
-          <dt className="label">Balance</dt>
+          <dt className="label">{tr('dash.balance')}</dt>
           <dd className="tabular font-semibold">
             {a.balance === null ? '—' : formatCurrency(Number(a.balance))}
           </dd>
         </div>
         <div>
-          <dt className="label">Equity</dt>
+          <dt className="label">{tr('dash.equity')}</dt>
           <dd className="tabular font-semibold">
             {a.equity === null ? '—' : formatCurrency(Number(a.equity))}
           </dd>
         </div>
         <div>
-          <dt className="label">Last sync</dt>
+          <dt className="label">{tr('acc.lastSync')}</dt>
           <dd>{ago(a.last_sync_at)}</dd>
         </div>
         <div>
-          <dt className="label">Trades</dt>
+          <dt className="label">{tr('acc.trades')}</dt>
           <dd className="tabular">{trades}</dd>
         </div>
       </dl>
 
       <div className="mt-4 flex flex-wrap items-end gap-3">
         <label className="flex flex-col gap-1.5">
-          <span className="label">Starting balance</span>
+          <span className="label">{tr('dash.startingBalance')}</span>
           <input
             className="field h-9 w-36 tabular"
             inputMode="decimal"
-            placeholder="Auto"
+            placeholder={tr('acc.auto')}
             value={start}
             onChange={(e) => setStart(e.target.value)}
             onBlur={() => {
@@ -130,7 +129,7 @@ function AccountCard({ a, onNewKey }: { a: AccountRow; onNewKey: () => void }) {
                 void run(
                   'start',
                   () => updateAccount(a.id, { starting_balance: v }),
-                  'Starting balance saved',
+                  tr('acc.startSaved'),
                 )
             }}
           />
@@ -140,15 +139,9 @@ function AccountCard({ a, onNewKey }: { a: AccountRow; onNewKey: () => void }) {
             size="sm"
             icon={<RefreshCw />}
             disabled={busy !== null}
-            onClick={() =>
-              void run(
-                'resync',
-                () => requestResync(a.id),
-                'Re-sync requested. The EA re-sends history on its next heartbeat.',
-              )
-            }
+            onClick={() => void run('resync', () => requestResync(a.id), tr('acc.resyncDone'))}
           >
-            Re-sync from MT5
+            {tr('acc.resync')}
           </Button>
           <Button
             size="sm"
@@ -159,16 +152,16 @@ function AccountCard({ a, onNewKey }: { a: AccountRow; onNewKey: () => void }) {
                 'recalc',
                 () =>
                   recalculate(a.id).then((r) =>
-                    toast(`Rebuilt ${r.trades} trades from ${r.deals} deals`),
+                    toast(tr('acc.recalcDone', { trades: r.trades, deals: r.deals })),
                   ),
-                'Recalculated',
+                tr('acc.recalculated'),
               )
             }
           >
-            {busy === 'recalc' ? 'Recalculating…' : 'Recalculate'}
+            {busy === 'recalc' ? tr('acc.recalculating') : tr('acc.recalc')}
           </Button>
           <Button size="sm" icon={<KeyRound />} onClick={onNewKey}>
-            New key
+            {tr('acc.newKeyBtn')}
           </Button>
           <Button
             size="sm"
@@ -176,7 +169,7 @@ function AccountCard({ a, onNewKey }: { a: AccountRow; onNewKey: () => void }) {
             icon={<Trash2 />}
             onClick={() => setConfirmDelete(true)}
           >
-            Delete
+            {tr('common.delete')}
           </Button>
         </div>
       </div>
@@ -187,17 +180,17 @@ function AccountCard({ a, onNewKey }: { a: AccountRow; onNewKey: () => void }) {
             <li key={k.id} className="flex items-center gap-3 py-2">
               <code className="font-mono">{k.key_prefix}…</code>
               <span className="text-muted">
-                created {ago(k.created_at)} · used {ago(k.last_used_at)}
+                {tr('acc.created', { t: ago(k.created_at), u: ago(k.last_used_at) })}
               </span>
               {k.revoked_at ? (
-                <span className="ml-auto text-neg">revoked</span>
+                <span className="ml-auto text-neg">{tr('acc.revoked')}</span>
               ) : (
                 <button
                   type="button"
                   className="ml-auto text-muted underline-offset-2 hover:text-neg hover:underline"
-                  onClick={() => void run('revoke', () => revokeKey(k.id), 'Key revoked')}
+                  onClick={() => void run('revoke', () => revokeKey(k.id), tr('acc.keyRevoked'))}
                 >
-                  Revoke
+                  {tr('acc.revoke')}
                 </button>
               )}
             </li>
@@ -208,19 +201,19 @@ function AccountCard({ a, onNewKey }: { a: AccountRow; onNewKey: () => void }) {
       <Modal
         open={confirmDelete}
         onClose={() => setConfirmDelete(false)}
-        title={`Delete ${a.name}?`}
-        description="Its synced trades, raw deals and keys are removed. Manual trades are kept. The EA stops working until you connect again."
+        title={tr('acc.deleteTitle', { name: a.name })}
+        description={tr('acc.deleteBody')}
         size="sm"
       >
         <div className="flex justify-end gap-2">
           <Button variant="quiet" onClick={() => setConfirmDelete(false)}>
-            Keep it
+            {tr('acc.keepIt')}
           </Button>
           <Button
             variant="danger"
-            onClick={() => void run('delete', () => deleteAccount(a.id), 'Account deleted')}
+            onClick={() => void run('delete', () => deleteAccount(a.id), tr('acc.deleted'))}
           >
-            Delete account
+            {tr('acc.deleteBtn')}
           </Button>
         </div>
       </Modal>
@@ -237,7 +230,7 @@ export function AccountsTab() {
     return (
       <section>
         <h3 className="mb-4 text-base font-semibold tracking-tight">
-          {wizard.accountId ? 'New sync key' : 'Connect MT5'}
+          {wizard.accountId ? tr('acc.newKey') : tr('acc.connect')}
         </h3>
         <ConnectWizard accountId={wizard.accountId} onDone={() => setWizard(null)} />
       </section>
@@ -246,23 +239,21 @@ export function AccountsTab() {
     <section>
       <div className="mb-4 flex items-end justify-between gap-3">
         <div>
-          <h3 className="text-base font-semibold tracking-tight">MT5 accounts</h3>
-          <p className="text-sm text-muted">
-            Closed trades, balance and equity sync automatically from the TradeDeskSync EA.
-          </p>
+          <h3 className="text-base font-semibold tracking-tight">{tr('acc.title')}</h3>
+          <p className="text-sm text-muted">{tr('acc.subtitle')}</p>
         </div>
         <Button variant="primary" icon={<Plus />} onClick={() => setWizard({})}>
-          Connect MT5
+          {tr('acc.connect')}
         </Button>
       </div>
       {accounts.length === 0 ? (
         <EmptyState
           icon={<KeyRound />}
-          title="No MT5 account yet"
-          body="Connect your XM account in about two minutes. Trades then appear here on their own."
+          title={tr('acc.noneTitle')}
+          body={tr('acc.noneBody')}
           action={
             <Button variant="primary" onClick={() => setWizard({})}>
-              Connect MT5
+              {tr('acc.connect')}
             </Button>
           }
         />

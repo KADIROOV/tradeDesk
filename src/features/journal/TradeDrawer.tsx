@@ -1,3 +1,4 @@
+import { tr } from '@/i18n'
 import { format } from 'date-fns'
 import { ImagePlus, Lock, Star, Trash2, X, Zap } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -14,7 +15,7 @@ import { useTimezone, useTradeActions, useTradeList } from '@/data/useTradeData'
 import { sessionForInstant } from '@/lib/sessions'
 import type { Direction, Session, Trade } from '@/lib/types'
 import { useSettings } from '@/store/settings'
-import { EMOTIONS, SESSION_LABEL } from './constants'
+import { EMOTIONS, emotionLabel, SESSION_LABEL, sessionLabel } from './constants'
 import { useUi } from '@/store/ui'
 
 const DEFAULT_SETUPS = [
@@ -108,18 +109,18 @@ export function TradeDrawer() {
       title={
         editing
           ? editing.source === 'mt5'
-            ? `${editing.symbol} · synced from MT5`
-            : `Edit ${editing.symbol} trade`
+            ? tr('trade.synced', { symbol: editing.symbol })
+            : tr('trade.edit', { symbol: editing.symbol })
           : drawer.quick
-            ? 'Quick log'
-            : 'Log trade'
+            ? tr('trade.quickLog')
+            : tr('trade.logTrade')
       }
       subtitle={
         editing
           ? `${formatInZone(tradeTime(editing), tz, 'weekday-date')} (${tz.replace(/_/g, ' ')})`
           : drawer.quick
-            ? 'Four fields. Add detail later.'
-            : 'P&L, R and RR are calculated as you type.'
+            ? tr('trade.quickHint')
+            : tr('trade.calcHint')
       }
       headerExtra={
         !editing && (
@@ -130,7 +131,7 @@ export function TradeDrawer() {
             onClick={() => setQuick(!drawer.quick)}
             aria-pressed={drawer.quick}
           >
-            Quick
+            {tr('trade.quick')}
           </Button>
         )
       }
@@ -224,7 +225,7 @@ function TradeForm({
       toast(message)
       onDone()
     } catch (e) {
-      toast(e instanceof Error ? e.message : 'Could not save', 'info')
+      toast(e instanceof Error ? e.message : tr('trade.couldNotSave'), 'info')
     } finally {
       setSaving(false)
     }
@@ -233,7 +234,11 @@ function TradeForm({
   const save = () => {
     setSubmitted(true)
     if (mt5 && editing) {
-      void persist({ ...editing, ...journal, screenshotId: undefined }, false, 'Journal saved')
+      void persist(
+        { ...editing, ...journal, screenshotId: undefined },
+        false,
+        tr('trade.journalSaved'),
+      )
       return
     }
     if (invalid || pnl === undefined) return
@@ -266,8 +271,11 @@ function TradeForm({
       t,
       !editing,
       editing
-        ? 'Trade updated'
-        : `${t.symbol} ${formatCurrency(t.pnl, { signed: true, hidden })} logged`,
+        ? tr('trade.updated')
+        : tr('trade.logged', {
+            symbol: t.symbol,
+            pnl: formatCurrency(t.pnl, { signed: true, hidden }),
+          }),
     )
   }
 
@@ -275,8 +283,12 @@ function TradeForm({
     <>
       <div className="grid grid-cols-2 gap-3">
         <Field
-          label="Session"
-          hint={autoSession && !f.session ? `Auto: ${SESSION_LABEL[autoSession]}` : undefined}
+          label={tr('trade.session')}
+          hint={
+            autoSession && !f.session
+              ? tr('trade.autoSession', { s: sessionLabel(autoSession) })
+              : undefined
+          }
         >
           {(id) => (
             <select
@@ -285,23 +297,23 @@ function TradeForm({
               value={f.session}
               onChange={(e) => set('session', e.target.value as Session | '')}
             >
-              <option value="">Auto-detect</option>
+              <option value="">{tr('trade.autoDetect')}</option>
               {(Object.keys(SESSION_LABEL) as Session[]).map((s) => (
                 <option key={s} value={s}>
-                  {SESSION_LABEL[s]}
+                  {sessionLabel(s)}
                 </option>
               ))}
             </select>
           )}
         </Field>
-        <Field label="Setup tag">
+        <Field label={tr('trade.setupTag')}>
           {(id) => (
             <>
               <input
                 id={id}
                 list="setups"
                 className="field"
-                placeholder="e.g. Breakout retest"
+                placeholder={tr('trade.setupPlaceholder')}
                 value={f.setup}
                 onChange={(e) => set('setup', e.target.value)}
               />
@@ -316,8 +328,8 @@ function TradeForm({
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <span className="label">Emotion</span>
-        <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label="Emotion">
+        <span className="label">{tr('trade.emotion')}</span>
+        <div className="flex flex-wrap gap-1.5" role="radiogroup" aria-label={tr('trade.emotion')}>
           {EMOTIONS.map((e) => (
             <button
               key={e}
@@ -327,14 +339,14 @@ function TradeForm({
               onClick={() => set('emotion', f.emotion === e ? '' : e)}
               className={`rounded-full border px-3 py-1 text-xs font-medium transition-[transform,opacity] active:scale-95 ${f.emotion === e ? 'border-accent/60 bg-accent/15 text-fg' : 'border-line/12 text-muted hover:text-fg'}`}
             >
-              {e}
+              {emotionLabel(e)}
             </button>
           ))}
         </div>
       </div>
 
       <div className="flex flex-col gap-1.5">
-        <span className="label">Rating</span>
+        <span className="label">{tr('trade.rating')}</span>
         <Stars value={f.rating} onChange={(v) => set('rating', v)} />
       </div>
 
@@ -344,13 +356,13 @@ function TradeForm({
         store={actions.storeScreenshot}
       />
 
-      <Field label="Notes">
+      <Field label={tr('trade.notes')}>
         {(id) => (
           <textarea
             id={id}
             rows={4}
             className="field"
-            placeholder="What did you see? What would you repeat or avoid?"
+            placeholder={tr('trade.notesPlaceholder')}
             value={f.notes}
             onChange={(e) => set('notes', e.target.value)}
           />
@@ -359,7 +371,7 @@ function TradeForm({
       <Checkbox
         checked={f.rulesFollowed}
         onChange={(v) => set('rulesFollowed', v)}
-        label="I followed my rules on this trade"
+        label={tr('trade.rulesFollowed')}
       />
     </>
   )
@@ -395,7 +407,7 @@ function TradeForm({
       ) : (
         <>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Symbol">
+            <Field label={tr('trade.symbol')}>
               {(id) => (
                 <>
                   <input
@@ -418,15 +430,15 @@ function TradeForm({
               )}
             </Field>
             <div className="flex flex-col gap-1.5">
-              <span className="label">Direction</span>
+              <span className="label">{tr('trade.direction')}</span>
               <Segmented
-                label="Direction"
+                label={tr('trade.direction')}
                 value={f.direction}
                 onChange={(v) => set('direction', v)}
                 className="h-10 items-stretch [&>button]:h-auto"
                 options={[
-                  { value: 'long', label: 'Long' },
-                  { value: 'short', label: 'Short' },
+                  { value: 'long', label: tr('common.long') },
+                  { value: 'short', label: tr('common.short') },
                 ]}
               />
             </div>
@@ -434,20 +446,20 @@ function TradeForm({
 
           {quick ? (
             <div className="grid grid-cols-2 gap-3">
-              <Field label="Net P&L ($)">
+              <Field label={tr('trade.netPnlUsd')}>
                 {(id) => (
                   <input
                     id={id}
                     className="field tabular"
                     inputMode="decimal"
-                    placeholder="e.g. 125 or -80"
+                    placeholder={tr('trade.pnlPlaceholder')}
                     value={f.pnl}
                     aria-invalid={submitted && errors.pnl}
                     onChange={(e) => set('pnl', e.target.value)}
                   />
                 )}
               </Field>
-              <Field label="Date & time">
+              <Field label={tr('trade.dateTime')}>
                 {(id) => (
                   <input
                     id={id}
@@ -461,7 +473,7 @@ function TradeForm({
             </div>
           ) : (
             <>
-              <Field label="Opened">
+              <Field label={tr('trade.opened')}>
                 {(id) => (
                   <input
                     id={id}
@@ -474,14 +486,14 @@ function TradeForm({
                 )}
               </Field>
               <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-                {num('entry', 'Entry')}
-                {num('stop', 'Stop')}
-                {num('takeProfit', 'Take profit')}
-                {num('exit', 'Exit')}
+                {num('entry', tr('trade.entry'))}
+                {num('stop', tr('trade.stop'))}
+                {num('takeProfit', tr('trade.takeProfit'))}
+                {num('exit', tr('trade.exit'))}
               </div>
               <div className="grid grid-cols-2 gap-3">
-                {num('lots', 'Lot size', '0.10')}
-                {num('fees', 'Fees ($)', '0')}
+                {num('lots', tr('trade.lotSize'), '0.10')}
+                {num('fees', tr('trade.fees'), '0')}
               </div>
 
               <div
@@ -489,12 +501,12 @@ function TradeForm({
                 aria-live="polite"
               >
                 <div>
-                  <p className="label">Net P&L</p>
+                  <p className="label">{tr('trade.netPnl')}</p>
                   {manual ? (
                     <input
                       className="field mt-1 h-8 text-center tabular"
                       inputMode="decimal"
-                      aria-label="Net P&L"
+                      aria-label={tr('trade.netPnl')}
                       placeholder="0.00"
                       value={f.pnl}
                       aria-invalid={submitted && errors.pnl}
@@ -509,7 +521,7 @@ function TradeForm({
                   )}
                 </div>
                 <div>
-                  <p className="label">R multiple</p>
+                  <p className="label">{tr('trade.rMultiple')}</p>
                   <p
                     className={`tabular mt-1 text-lg font-semibold ${r === undefined ? 'text-muted' : r >= 0 ? 'text-pos' : 'text-neg'}`}
                   >
@@ -517,7 +529,7 @@ function TradeForm({
                   </p>
                 </div>
                 <div>
-                  <p className="label">Planned RR</p>
+                  <p className="label">{tr('trade.plannedRR')}</p>
                   <p className="tabular mt-1 text-lg font-semibold">
                     {rr === undefined ? '—' : `1:${formatNumber(rr, 2)}`}
                   </p>
@@ -526,9 +538,9 @@ function TradeForm({
                   <span>
                     {spec
                       ? calc
-                        ? `${formatNumber(calc.pips, 1)} ${spec.category.startsWith('fx') || spec.symbol === 'XAUUSD' ? 'pips' : 'points'} · gross ${formatCurrency(calc.gross, { hidden })}`
-                        : 'Enter entry, exit and size'
-                      : 'Unknown symbol — enter P&L manually'}
+                        ? `${formatNumber(calc.pips, 1)} ${spec.category.startsWith('fx') || spec.symbol === 'XAUUSD' ? tr('trade.pips') : tr('trade.points')} · ${tr('trade.gross', { v: formatCurrency(calc.gross, { hidden }) })}`
+                        : tr('trade.enterPrices')
+                      : tr('trade.unknownSymbol')}
                   </span>
                   {spec && (
                     <button
@@ -536,7 +548,7 @@ function TradeForm({
                       className="text-accent underline-offset-2 hover:underline"
                       onClick={() => set('pnlManual', !f.pnlManual)}
                     >
-                      {f.pnlManual ? 'Auto-calculate' : 'Enter manually'}
+                      {f.pnlManual ? tr('trade.autoCalc') : tr('trade.enterManually')}
                     </button>
                   )}
                 </div>
@@ -551,10 +563,10 @@ function TradeForm({
       {submitted && invalid && (
         <p className="text-sm text-neg">
           {errors.symbol
-            ? 'Add a symbol.'
+            ? tr('trade.errSymbol')
             : errors.openedAt
-              ? 'Pick a valid date.'
-              : 'Enter prices and size, or a P&L.'}
+              ? tr('trade.errDate')
+              : tr('trade.errPnl')}
         </p>
       )}
 
@@ -572,21 +584,27 @@ function TradeForm({
                   ...(editing.screenshotId ? [editing.screenshotId] : []),
                 ])
                   void (ref.startsWith('sb:') ? deleteScreenshot(ref) : deleteBlob(ref))
-                toast('Trade deleted', 'info')
+                toast(tr('trade.deleted'), 'info')
                 onDone()
               } catch (e) {
-                toast(e instanceof Error ? e.message : 'Could not delete', 'info')
+                toast(e instanceof Error ? e.message : tr('trade.couldNotDelete'), 'info')
               }
             }}
           >
-            Delete
+            {tr('common.delete')}
           </Button>
         )}
         <Button variant="quiet" className="ml-auto" onClick={onDone}>
-          Cancel
+          {tr('common.cancel')}
         </Button>
         <Button type="submit" variant="primary" disabled={saving}>
-          {saving ? 'Saving…' : mt5 ? 'Save journal' : editing ? 'Save changes' : 'Save trade'}
+          {saving
+            ? tr('trade.saving')
+            : mt5
+              ? tr('trade.saveJournal')
+              : editing
+                ? tr('trade.saveChanges')
+                : tr('trade.saveTrade')}
         </Button>
       </div>
     </form>
@@ -621,14 +639,14 @@ function Thumb({ refId, onRemove }: { refId: string; onRemove: () => void }) {
   return (
     <div className="relative aspect-video overflow-hidden rounded-[var(--radius-sm)] border border-line/10 bg-line/5">
       {url ? (
-        <a href={url} target="_blank" rel="noreferrer" title="Open full size">
+        <a href={url} target="_blank" rel="noreferrer" title={tr('trade.openFull')}>
           <img src={url} alt="Trade screenshot" className="h-full w-full object-cover" />
         </a>
       ) : (
         <div className="skeleton absolute inset-0 rounded-none" />
       )}
       <IconButton
-        label="Remove screenshot"
+        label={tr('trade.removeShot')}
         variant="ghost"
         size="sm"
         className="absolute top-1.5 right-1.5 !bg-black/55 !text-white"
@@ -659,21 +677,21 @@ function Screenshots({
       const added: string[] = []
       for (const file of images) {
         if (file.size > 8 * 1024 * 1024) {
-          toast('Screenshots must be under 8 MB', 'info')
+          toast(tr('trade.shotTooBig'), 'info')
           continue
         }
         added.push(await store(file))
       }
       onChange([...refs, ...added])
     } catch (e) {
-      toast(e instanceof Error ? e.message : 'Upload failed', 'info')
+      toast(e instanceof Error ? e.message : tr('trade.uploadFailed'), 'info')
     } finally {
       setBusy(false)
     }
   }
   return (
     <div className="flex flex-col gap-1.5">
-      <span className="label">Screenshots</span>
+      <span className="label">{tr('trade.screenshots')}</span>
       {refs.length > 0 && (
         <div className="grid grid-cols-2 gap-2">
           {refs.map((r) => (
@@ -689,7 +707,11 @@ function Screenshots({
         className="flex items-center justify-center gap-2 rounded-[var(--radius-sm)] border border-dashed border-line/20 py-4 text-sm text-muted transition-colors hover:border-accent/50 hover:text-fg"
       >
         <ImagePlus className="size-4" />{' '}
-        {busy ? 'Uploading…' : refs.length ? 'Add another' : 'Upload chart screenshot'}
+        {busy
+          ? tr('trade.uploading')
+          : refs.length
+            ? tr('trade.addAnother')
+            : tr('trade.uploadShot')}
       </button>
       <input
         ref={input}
@@ -705,14 +727,14 @@ function Screenshots({
 
 function Stars({ value, onChange }: { value: number; onChange: (v: number) => void }) {
   return (
-    <div className="flex gap-1" role="radiogroup" aria-label="Trade rating">
+    <div className="flex gap-1" role="radiogroup" aria-label={tr('trade.ratingAria')}>
       {[1, 2, 3, 4, 5].map((n) => (
         <button
           key={n}
           type="button"
           role="radio"
           aria-checked={value === n}
-          aria-label={`${n} star${n > 1 ? 's' : ''}`}
+          aria-label={tr('trade.stars', { n })}
           onClick={() => onChange(value === n ? 0 : n)}
           className={`grid size-8 place-items-center rounded-full transition-transform active:scale-90 ${n <= value ? 'text-accent' : 'text-muted hover:text-fg'}`}
         >
@@ -735,7 +757,7 @@ function Mt5Summary({ t, tz, hidden }: { t: Trade; tz: string; hidden: boolean }
   return (
     <section
       className="glass rounded-[var(--radius-sm)] p-4"
-      aria-label="Broker numbers (read-only)"
+      aria-label={tr('trade.brokerNumbers')}
     >
       <div className="mb-3 flex items-center justify-between gap-2">
         <span className="flex items-center gap-2">
@@ -757,19 +779,22 @@ function Mt5Summary({ t, tz, hidden }: { t: Trade; tz: string; hidden: boolean }
       </div>
       <div className="grid grid-cols-3 gap-3">
         {cell(
-          'Net P&L',
-          t.status === 'open' ? 'Open' : formatCurrency(t.pnl, { signed: true, hidden }),
+          tr('trade.netPnl'),
+          t.status === 'open' ? tr('common.open') : formatCurrency(t.pnl, { signed: true, hidden }),
           t.pnl >= 0 ? 'text-pos' : 'text-neg',
         )}
-        {cell('R multiple', r === undefined ? 'R unknown' : formatR(r))}
-        {cell('Volume', t.lots === undefined ? '—' : `${formatNumber(t.lots, 2)} lots`)}
-        {cell('Open', price(t.entry))}
-        {cell('Close', price(t.exit))}
-        {cell('Initial SL', price(t.stop))}
-        {cell('Opened', formatInZone(t.openedAt, tz))}
-        {cell('Closed', t.closedAt ? formatInZone(t.closedAt, tz) : '—')}
+        {cell(tr('trade.rMultiple'), r === undefined ? tr('trade.rUnknown') : formatR(r))}
         {cell(
-          'Costs',
+          tr('trade.volume'),
+          t.lots === undefined ? '—' : tr('trade.lots', { n: formatNumber(t.lots, 2) }),
+        )}
+        {cell(tr('common.open'), price(t.entry))}
+        {cell(tr('trade.close'), price(t.exit))}
+        {cell(tr('trade.initialSl'), price(t.stop))}
+        {cell(tr('trade.opened'), formatInZone(t.openedAt, tz))}
+        {cell(tr('trade.closed'), t.closedAt ? formatInZone(t.closedAt, tz) : '—')}
+        {cell(
+          tr('trade.costs'),
           formatCurrency((t.commission ?? 0) + (t.swap ?? 0), { hidden, signed: true }),
         )}
       </div>

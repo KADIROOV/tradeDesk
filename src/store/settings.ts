@@ -5,6 +5,7 @@ import { DEFAULT_SYMBOL_SPECS } from '@/data/symbolSpecs'
 import { uid } from '@/lib/format'
 import type { SymbolSpec } from '@/lib/types'
 import { DEFAULT_TIMEZONE, isValidTimeZone } from '@/lib/mt5/tz'
+import { detectLanguage, isLang, type Lang } from '@/i18n'
 import {
   applyPreset,
   defaultBackground,
@@ -28,6 +29,9 @@ interface SettingsState {
   symbolSpecs: SymbolSpec[]
   /** IANA zone used to decide which calendar day a trade belongs to. */
   timezone: string
+  /** Interface language. */
+  language: Lang
+  setLanguage: (lang: Lang) => void
   /** 'all', 'manual' (trades logged by hand) or an MT5 account id. */
   selectedAccount: string
   setTimezone: (tz: string) => void
@@ -60,6 +64,8 @@ export const useSettings = create<SettingsState>()(
       startingBalance: 10000,
       symbolSpecs: DEFAULT_SYMBOL_SPECS,
       timezone: DEFAULT_TIMEZONE,
+      language: detectLanguage(),
+      setLanguage: (language) => set({ language: isLang(language) ? language : 'en' }),
       selectedAccount: 'all',
       setTimezone: (timezone) =>
         set({ timezone: isValidTimeZone(timezone) ? timezone : DEFAULT_TIMEZONE }),

@@ -1,3 +1,4 @@
+import { tr } from '@/i18n'
 import { useState } from 'react'
 import { Card } from '@/components/ui/Card'
 import { Segmented } from '@/components/ui/controls'
@@ -59,25 +60,25 @@ export function PositionSizeCalc() {
 
   return (
     <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-      <Card label="Inputs">
+      <Card label={tr('calc.inputs')}>
         <div className="grid grid-cols-2 gap-3">
           <div className="col-span-2">
             <SymbolSelect value={symbol} onChange={changeSymbol} />
           </div>
-          <NumField label="Account balance" value={balance} onChange={setBalance} suffix="USD" />
+          <NumField label={tr('calc.balance')} value={balance} onChange={setBalance} suffix="USD" />
           <div className="flex flex-col gap-1.5">
-            <span className="label">Risk</span>
+            <span className="label">{tr('calc.risk')}</span>
             <div className="flex gap-2">
               <input
                 type="number"
                 inputMode="decimal"
                 className="field tabular"
-                aria-label={mode === 'percent' ? 'Risk percent' : 'Risk amount'}
+                aria-label={mode === 'percent' ? tr('calc.riskPercent') : tr('calc.riskAmount')}
                 value={risk}
                 onChange={(e) => setRisk(e.target.value)}
               />
               <Segmented
-                label="Risk mode"
+                label={tr('calc.riskMode')}
                 size="sm"
                 value={mode}
                 onChange={setMode}
@@ -89,17 +90,22 @@ export function PositionSizeCalc() {
               />
             </div>
           </div>
-          <NumField label="Entry" value={entry} onChange={setEntry} />
-          <NumField label="Stop loss" value={stop} onChange={setStop} />
-          <NumField label="Take profit (optional)" value={tp} onChange={setTp} />
-          <NumField label="Leverage" value={leverage} onChange={setLeverage} suffix=":1" />
+          <NumField label={tr('calc.entry')} value={entry} onChange={setEntry} />
+          <NumField label={tr('calc.stopLoss')} value={stop} onChange={setStop} />
+          <NumField label={tr('calc.tpOptional')} value={tp} onChange={setTp} />
+          <NumField
+            label={tr('calc.leverage')}
+            value={leverage}
+            onChange={setLeverage}
+            suffix=":1"
+          />
           <div className="col-span-2">
             <ConversionField spec={spec} value={rate} onChange={setRate} />
           </div>
         </div>
       </Card>
       <Card
-        label="Position"
+        label={tr('calc.position')}
         action={
           r && (
             <span
@@ -114,46 +120,44 @@ export function PositionSizeCalc() {
           <div className="grid grid-cols-2 gap-2.5">
             <Output
               big
-              label="Lot size"
+              label={tr('calc.lotSize')}
               value={formatFixed(r.lots, 2)}
               sub={
                 r.lots === 0
-                  ? 'Risk too small for 0.01 lots'
+                  ? tr('calc.tooSmall')
                   : `${formatNumber(r.lots * spec.contractSize, 2)} units · raw ${formatNumber(r.rawLots, 3)}`
               }
             />
             <Output
-              label="Risk"
+              label={tr('calc.risk')}
               value={formatCurrency(r.riskActual)}
               sub={`${formatNumber(r.riskPercentActual, 2)}% of balance · target ${formatCurrency(r.riskTarget)}`}
               tone="neg"
             />
             <Output
-              label="Stop distance"
+              label={tr('calc.stopDistance')}
               value={`${formatNumber(r.pips, 1)} ${unit}`}
               sub={`${formatNumber(r.distance, spec.digits)} in price`}
             />
             <Output
               label={`Value per ${unit === 'pips' ? 'pip' : 'point'}`}
               value={formatCurrency(r.pipValue)}
-              sub="At this lot size"
+              sub={tr('calc.atLot')}
             />
             <Output
-              label="RR to target"
+              label={tr('calc.rrToTarget')}
               value={r.rr !== null ? `1 : ${formatNumber(r.rr, 2)}` : '—'}
-              sub={r.reward !== null ? `Reward ${formatCurrency(r.reward)}` : 'Add a take profit'}
+              sub={r.reward !== null ? `Reward ${formatCurrency(r.reward)}` : tr('calc.addTp')}
               tone={r.rr !== null && r.rr > 0 ? 'pos' : undefined}
             />
             <Output
-              label="Margin required"
+              label={tr('calc.margin')}
               value={r.margin !== null ? formatCurrency(r.margin) : '—'}
               sub={`Notional ${formatCurrency(r.notional, { compact: r.notional > 1e6 })}`}
             />
           </div>
         ) : (
-          <p className="text-sm text-muted">
-            Enter a balance, risk, entry and a stop that differs from the entry.
-          </p>
+          <p className="text-sm text-muted">{tr('calc.enterAll')}</p>
         )}
         <p className="mt-4 text-xs text-muted">
           Uses {spec.symbol} spec: {formatNumber(spec.contractSize)} per lot, tick {spec.tickSize} ={' '}
@@ -192,7 +196,7 @@ export function PnlCalc() {
       : null
   return (
     <div className="grid gap-4 lg:grid-cols-2">
-      <Card label="Inputs">
+      <Card label={tr('calc.inputs')}>
         <div className="grid grid-cols-2 gap-3">
           <div className="col-span-2">
             <SymbolSelect
@@ -204,36 +208,36 @@ export function PnlCalc() {
             />
           </div>
           <div className="col-span-2 flex flex-col gap-1.5">
-            <span className="label">Direction</span>
+            <span className="label">{tr('trade.direction')}</span>
             <Segmented
-              label="Direction"
+              label={tr('trade.direction')}
               value={direction}
               onChange={setDirection}
               options={[
-                { value: 'long', label: 'Long' },
-                { value: 'short', label: 'Short' },
+                { value: 'long', label: tr('common.long') },
+                { value: 'short', label: tr('common.short') },
               ]}
             />
           </div>
-          <NumField label="Entry" value={entry} onChange={setEntry} />
-          <NumField label="Exit" value={exit} onChange={setExit} />
-          <NumField label="Lots" value={lots} onChange={setLots} />
-          <NumField label="Fees" value={fees} onChange={setFees} suffix="USD" />
+          <NumField label={tr('calc.entry')} value={entry} onChange={setEntry} />
+          <NumField label={tr('calc.exit')} value={exit} onChange={setExit} />
+          <NumField label={tr('calc.lots')} value={lots} onChange={setLots} />
+          <NumField label={tr('calc.fees')} value={fees} onChange={setFees} suffix="USD" />
           <div className="col-span-2">
             <ConversionField spec={spec} value={rate} onChange={setRate} />
           </div>
         </div>
       </Card>
-      <Card label="Result">
+      <Card label={tr('calc.result')}>
         {r ? (
           <div className="grid grid-cols-2 gap-2.5">
             <Output
               big
-              label="Net P&L"
+              label={tr('calc.netPnl')}
               value={formatCurrency(r.net, { signed: true })}
               tone={r.net >= 0 ? 'pos' : 'neg'}
             />
-            <Output label="Gross" value={formatCurrency(r.gross, { signed: true })} />
+            <Output label={tr('calc.gross')} value={formatCurrency(r.gross, { signed: true })} />
             <Output
               label={`Move (${unitName(spec)})`}
               value={formatNumber(r.pips, 1)}
@@ -241,7 +245,7 @@ export function PnlCalc() {
             />
           </div>
         ) : (
-          <p className="text-sm text-muted">Enter entry, exit and lot size.</p>
+          <p className="text-sm text-muted">{tr('calc.enterExit')}</p>
         )}
       </Card>
     </div>

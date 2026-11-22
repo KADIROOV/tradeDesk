@@ -1,4 +1,5 @@
-import { addDays, format, isSameDay, startOfWeek } from 'date-fns'
+import { fmtDate, tn, tr } from '@/i18n'
+import { addDays, isSameDay, startOfWeek } from 'date-fns'
 import { motion } from 'framer-motion'
 import { Eye, EyeOff, Flame, PlugZap, Plus, Snowflake, Sparkles } from 'lucide-react'
 import { useCallback, useMemo, type ReactNode } from 'react'
@@ -56,37 +57,37 @@ export default function DashboardPage() {
             <WinRateCard rate={stats.winRate} wins={stats.wins} losses={stats.losses} />
             <AvgRRCard r={stats.avgWinR} />
             <Metric
-              label="Profit factor"
+              label={tr('dash.profitFactor')}
               value={stats.profitFactor}
               format={(v) => (Number.isFinite(v) ? v.toFixed(2) : '∞')}
               sub={
                 stats.profitFactor >= 1.5
-                  ? 'Healthy edge'
+                  ? tr('dash.healthyEdge')
                   : stats.profitFactor >= 1
-                    ? 'Marginal edge'
-                    : 'Losing edge'
+                    ? tr('dash.marginalEdge')
+                    : tr('dash.losingEdge')
               }
             />
             <StreakCard streak={stats.streak} />
             <AvgWinLossCard win={stats.avgWin} loss={stats.avgLoss} />
             <Metric
-              label="Expectancy"
+              label={tr('dash.expectancy')}
               money
               value={stats.expectancy}
               signed
-              sub="Average net per trade"
+              sub={tr('dash.avgNet')}
             />
             <Metric
-              label="Max drawdown"
+              label={tr('dash.maxDrawdown')}
               money
               value={-stats.maxDrawdown}
-              sub={`${formatPercent(stats.maxDrawdownPct)} from peak`}
+              sub={tr('dash.fromPeak', { pct: formatPercent(stats.maxDrawdownPct) })}
             />
             <Metric
-              label="Trades"
+              label={tr('dash.trades')}
               value={stats.count}
               format={(v) => formatNumber(v, 0)}
-              sub={`${stats.wins} wins · ${stats.losses} losses${stats.breakeven ? ` · ${stats.breakeven} BE` : ''}`}
+              sub={`${tr('dash.winsLosses', { w: stats.wins, l: stats.losses })}${stats.breakeven ? ` · ${tr('dash.be', { n: stats.breakeven })}` : ''}`}
             />
           </div>
           <div className="grid gap-4 2xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
@@ -118,7 +119,8 @@ function Hero({
   const fmt = useCallback((v: number) => formatCurrency(v, { hidden, signed: true }), [hidden])
   const balanceFmt = useCallback((v: number) => formatCurrency(v, { hidden }), [hidden])
   const hour = new Date().getHours()
-  const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
+  const greeting =
+    hour < 12 ? tr('dash.morning') : hour < 18 ? tr('dash.afternoon') : tr('dash.evening')
   const floating = summary.equity === null ? null : summary.equity - summary.balance
   return (
     <Card className="overflow-hidden">
@@ -132,11 +134,15 @@ function Hero({
       <div className="relative flex flex-wrap items-end justify-between gap-6">
         <div>
           <p className="text-sm text-muted">
-            {greeting}. <span className="serif text-fg">Trade the plan.</span>
+            {greeting}. <span className="serif text-fg">{tr('dash.tradePlan')}</span>
           </p>
           <div className="mt-4 flex items-center gap-2">
-            <p className="label">Total P&L</p>
-            <IconButton size="sm" label={hidden ? 'Show P&L' : 'Hide P&L'} onClick={toggle}>
+            <p className="label">{tr('dash.totalPnl')}</p>
+            <IconButton
+              size="sm"
+              label={hidden ? tr('dash.showPnl') : tr('dash.hidePnl')}
+              onClick={toggle}
+            >
               {hidden ? <EyeOff /> : <Eye />}
             </IconButton>
           </div>
@@ -146,30 +152,32 @@ function Hero({
             <CountUp value={total} format={fmt} />
           </p>
           <p className="mt-3 text-sm text-muted">
-            {count} closed trades
-            {open > 0 && ` · ${open} open`}
+            {tn('n.closedTrades', count)}
+            {open > 0 && ` · ${tr('dash.openCount', { n: open })}`}
             {' · '}
             {summary.returnPct !== null && !hidden
-              ? `${formatPercent(summary.returnPct, 2)} return${summary.live ? ' (deposits excluded)' : ' on starting balance'}`
-              : 'Net of fees'}
+              ? `${tr('dash.return', { pct: formatPercent(summary.returnPct, 2) })} ${summary.live ? tr('dash.depositsExcluded') : tr('dash.onStarting')}`
+              : tr('dash.netOfFees')}
           </p>
         </div>
         {summary.live ? (
           <div className="flex flex-wrap items-end gap-6 sm:flex-col sm:items-end sm:gap-1">
             <div className="sm:text-right">
-              <p className="label">Balance</p>
+              <p className="label">{tr('dash.balance')}</p>
               <p className="tabular text-2xl font-semibold tracking-tight">
                 <CountUp value={summary.balance} format={balanceFmt} />
               </p>
             </div>
             {summary.equity !== null && (
               <div className="sm:text-right">
-                <p className="label">Equity</p>
+                <p className="label">{tr('dash.equity')}</p>
                 <p className="tabular text-lg font-medium tracking-tight">
                   <CountUp value={summary.equity} format={balanceFmt} />
                   {floating !== null && Math.abs(floating) >= 0.01 && (
                     <span className={`ml-2 text-xs ${floating > 0 ? 'text-pos' : 'text-neg'}`}>
-                      {formatCurrency(floating, { hidden, signed: true })} open
+                      {tr('dash.floating', {
+                        v: formatCurrency(floating, { hidden, signed: true }),
+                      })}
                     </span>
                   )}
                 </p>
@@ -179,17 +187,17 @@ function Hero({
               <span className="rounded bg-accent/15 px-1.5 py-px text-[0.6rem] font-semibold tracking-wide text-accent">
                 MT5
               </span>
-              {accounts.length === 1 ? accounts[0].name : `${accounts.length} accounts`}
+              {accounts.length === 1 ? accounts[0].name : tn('n.accounts', accounts.length)}
             </p>
           </div>
         ) : (
           <div className="flex flex-col items-start gap-1 sm:items-end">
-            <p className="label">Account balance</p>
+            <p className="label">{tr('dash.accountBalance')}</p>
             <p className="tabular text-2xl font-semibold tracking-tight">
               <CountUp value={summary.balance} format={balanceFmt} />
             </p>
             <label className="flex items-center gap-2 text-xs text-muted">
-              Starting
+              {tr('dash.starting')}
               <input
                 type="number"
                 min={0}
@@ -198,7 +206,7 @@ function Hero({
                 placeholder={hidden ? '••••' : ''}
                 disabled={hidden}
                 onChange={(e) => setStart(Math.max(0, Number(e.target.value) || 0))}
-                aria-label="Starting balance"
+                aria-label={tr('dash.startingBalance')}
               />
             </label>
           </div>
@@ -216,7 +224,7 @@ function DashboardEmpty() {
   return (
     <EmptyState
       icon={cloud ? <PlugZap /> : <Sparkles />}
-      title={cloud ? 'Connect MT5 and just trade' : 'Your dashboard comes alive with trades'}
+      title={cloud ? tr('dash.emptyCloudTitle') : tr('dash.emptyTitle')}
       body={
         cloud
           ? 'Attach the TradeDeskSync EA to your XM terminal. Every closed trade, your balance and daily P&L then appear here within seconds.'
@@ -226,25 +234,25 @@ function DashboardEmpty() {
         cloud ? (
           <>
             <Button variant="primary" icon={<PlugZap />} onClick={() => openSettings('accounts')}>
-              Connect MT5
+              {tr('dash.connectMt5')}
             </Button>
             <Button icon={<Plus />} onClick={() => openTrade()}>
-              Log a manual trade
+              {tr('dash.logManual')}
             </Button>
           </>
         ) : (
           <>
             <Button variant="primary" icon={<Plus />} onClick={() => openTrade()}>
-              Log first trade
+              {tr('dash.logFirst')}
             </Button>
             <Button
               icon={<Sparkles />}
               onClick={() => {
                 loadDemo()
-                toast('Loaded 60 demo trades')
+                toast(tr('dash.demoLoaded'))
               }}
             >
-              Load demo data
+              {tr('dash.loadDemo')}
             </Button>
           </>
         )
@@ -292,19 +300,17 @@ function WinRateCard({ rate, wins, losses }: { rate: number; wins: number; losse
   return (
     <Card lift className="flex items-center justify-between gap-3">
       <div>
-        <p className="label">Win rate</p>
+        <p className="label">{tr('dash.winRate')}</p>
         <p className="mt-2 text-2xl font-semibold tracking-tight sm:text-[1.75rem]">
           <CountUp value={rate} format={fmt} />
         </p>
-        <p className="pt-1 text-xs text-muted">
-          {wins}W · {losses}L
-        </p>
+        <p className="pt-1 text-xs text-muted">{tr('dash.winsLosses', { w: wins, l: losses })}</p>
       </div>
       <svg
         viewBox="0 0 64 64"
         className="size-12 shrink-0 -rotate-90 sm:size-[4.5rem]"
         role="img"
-        aria-label={`Win rate ${Math.round(rate * 100)}%`}
+        aria-label={`${tr('dash.winRate')} ${Math.round(rate * 100)}%`}
       >
         <circle
           cx="32"
@@ -338,7 +344,7 @@ function AvgRRCard({ r }: { r: number }) {
   const fmt = useCallback((v: number) => `${v.toFixed(2)}R`, [])
   return (
     <Card lift className="flex flex-col">
-      <p className="label">Avg win RR</p>
+      <p className="label">{tr('dash.avgWinRR')}</p>
       <p className="mt-2 text-2xl font-semibold tracking-tight sm:text-[1.75rem]">
         <CountUp value={r} format={fmt} />
       </p>
@@ -349,7 +355,7 @@ function AvgRRCard({ r }: { r: number }) {
           aria-valuemin={0}
           aria-valuemax={max}
           aria-valuenow={Number(r.toFixed(2))}
-          aria-label="Average winning R multiple"
+          aria-label={tr('dash.avgWinRAria')}
         >
           <motion.div
             className="absolute inset-y-0 left-0 w-full origin-left rounded-full"
@@ -381,7 +387,7 @@ function StreakCard({ streak }: { streak: { kind: 'win' | 'loss' | 'none'; count
   const fmt = useCallback((v: number) => formatNumber(Math.round(v), 0), [])
   return (
     <Card lift className="flex flex-col">
-      <p className="label">Current streak</p>
+      <p className="label">{tr('dash.streak')}</p>
       <p className="mt-2 flex items-center gap-2 text-2xl font-semibold tracking-tight sm:text-[1.75rem]">
         <CountUp value={streak.count} format={fmt} />
         <span
@@ -391,11 +397,11 @@ function StreakCard({ streak }: { streak: { kind: 'win' | 'loss' | 'none'; count
             ? ''
             : streak.kind === 'win'
               ? streak.count === 1
-                ? 'win'
-                : 'wins'
+                ? tr('dash.win')
+                : tr('dash.wins')
               : streak.count === 1
-                ? 'loss'
-                : 'losses'}
+                ? tr('dash.loss')
+                : tr('dash.losses')}
         </span>
         {streak.kind === 'win' ? (
           <Flame className="size-5 text-pos" aria-hidden />
@@ -404,9 +410,7 @@ function StreakCard({ streak }: { streak: { kind: 'win' | 'loss' | 'none'; count
         ) : null}
       </p>
       <p className="mt-auto pt-1 text-xs text-muted">
-        {streak.kind === 'loss' && streak.count >= 2
-          ? 'Consider stepping away after two losses.'
-          : 'Process over outcome.'}
+        {streak.kind === 'loss' && streak.count >= 2 ? tr('dash.stepAway') : tr('dash.process')}
       </p>
     </Card>
   )
@@ -417,7 +421,7 @@ function AvgWinLossCard({ win, loss }: { win: number; loss: number }) {
   const total = win + loss || 1
   return (
     <Card lift className="flex flex-col">
-      <p className="label">Avg win / loss</p>
+      <p className="label">{tr('dash.avgWinLoss')}</p>
       <p className="tabular mt-2 flex items-baseline gap-1.5 text-xl font-semibold tracking-tight sm:text-2xl">
         <span className="text-pos">{formatCurrency(win, { hidden, compact: win >= 10000 })}</span>
         <span className="text-sm text-muted">/</span>
@@ -440,7 +444,7 @@ function AvgWinLossCard({ win, loss }: { win: number; loss: number }) {
         />
       </div>
       <p className="pt-1.5 text-xs text-muted">
-        Payoff ratio {loss > 0 ? (win / loss).toFixed(2) : '—'}
+        {tr('dash.payoff', { v: loss > 0 ? (win / loss).toFixed(2) : '—' })}
       </p>
     </Card>
   )
@@ -458,13 +462,13 @@ function EquityTooltip({ active, payload }: TipProps) {
   return (
     <div className="glass glass-strong rounded-xl px-3 py-2 text-xs shadow-lg">
       <p className="text-muted">
-        Trade {p.index} · {format(new Date(p.date), 'd MMM yyyy')}
+        {tr('dash.tradeN', { n: p.index })} · {fmtDate(new Date(p.date), 'd MMM yyyy')}
       </p>
       <p className="tabular mt-0.5 text-sm font-semibold text-fg">
         {formatCurrency(p.equity, { hidden, signed: true })}
       </p>
       <p className="tabular text-muted">
-        This trade {formatCurrency(p.pnl, { hidden, signed: true })}
+        {tr('dash.thisTrade', { v: formatCurrency(p.pnl, { hidden, signed: true }) })}
       </p>
     </div>
   )
@@ -489,7 +493,7 @@ function EquityCard({ trades }: { trades: Trade[] }) {
   const color = last >= 0 ? c.pos : c.neg
   return (
     <Card
-      label="Cumulative P&L"
+      label={tr('dash.cumulative')}
       action={
         <span className="tabular text-sm text-muted">
           {formatCurrency(last, { hidden, signed: true })}
@@ -563,7 +567,7 @@ function WeekCard({ trades }: { trades: Trade[] }) {
   const max = Math.max(1, ...days.map((x) => Math.abs(x.s?.pnl ?? 0)))
   return (
     <Card
-      label="This week"
+      label={tr('dash.thisWeek')}
       action={
         <span
           className={`tabular text-sm font-semibold ${total > 0 ? 'text-pos' : total < 0 ? 'text-neg' : 'text-muted'}`}
@@ -582,8 +586,8 @@ function WeekCard({ trades }: { trades: Trade[] }) {
               className="group relative flex flex-1 flex-col items-center"
               title={
                 s
-                  ? `${format(d, 'EEE d MMM')}: ${formatCurrency(s.pnl, { hidden, signed: true })} · ${s.count} trades`
-                  : `${format(d, 'EEE d MMM')}: no trades`
+                  ? `${fmtDate(d, 'EEE d MMM')}: ${formatCurrency(s.pnl, { hidden, signed: true })} · ${tn('n.trades', s.count)}`
+                  : `${fmtDate(d, 'EEE d MMM')}: ${tr('dash.noTrades')}`
               }
             >
               <div className="relative w-full flex-1">
@@ -601,7 +605,7 @@ function WeekCard({ trades }: { trades: Trade[] }) {
               <span
                 className={`mt-1 text-xs ${isSameDay(d, today) ? 'font-semibold text-accent' : 'text-muted'}`}
               >
-                {format(d, 'EEE')}
+                {fmtDate(d, 'EEE')}
               </span>
               <span className="tabular text-[0.65rem] text-muted">
                 {s
@@ -618,15 +622,15 @@ function WeekCard({ trades }: { trades: Trade[] }) {
       </div>
       <div className="mt-4 grid grid-cols-3 gap-2 border-t hairline pt-3 text-center">
         <div>
-          <p className="label">Trades</p>
+          <p className="label">{tr('dash.trades')}</p>
           <p className="tabular font-semibold">{count}</p>
         </div>
         <div>
-          <p className="label">Wins</p>
+          <p className="label">{tr('dash.wins2')}</p>
           <p className="tabular font-semibold">{wins}</p>
         </div>
         <div>
-          <p className="label">Win rate</p>
+          <p className="label">{tr('dash.winRate')}</p>
           <p className="tabular font-semibold">{count ? formatPercent(wins / count, 0) : '—'}</p>
         </div>
       </div>

@@ -4,9 +4,11 @@ import './index.css'
 import App from './App'
 import { applyThemeToDocument } from './features/theme/applyTheme'
 import { useSettings } from './store/settings'
+import { setLanguage } from './i18n'
 
 // Apply the saved theme before first paint so there is no flash of the default palette.
 applyThemeToDocument(useSettings.getState().theme)
+setLanguage(useSettings.getState().language)
 
 const root = document.getElementById('root')
 if (!root) throw new Error('Missing #root')

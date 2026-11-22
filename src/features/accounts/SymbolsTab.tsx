@@ -1,3 +1,4 @@
+import { tr } from '@/i18n'
 import { Calculator } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Button } from '@/components/ui/Button'
@@ -39,7 +40,7 @@ export function SymbolsTab() {
         ? Object.fromEntries(Object.entries(overrides).filter(([k]) => k !== raw))
         : { ...overrides, [raw]: { ...overrides[raw], ...patch } }
     void saveProfile({ settings: { symbolMap: next } }).catch((e: unknown) =>
-      toast(e instanceof Error ? e.message : 'Save failed', 'info'),
+      toast(e instanceof Error ? e.message : tr('common.saveFailed'), 'info'),
     )
   }
 
@@ -47,12 +48,8 @@ export function SymbolsTab() {
     <section>
       <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h3 className="text-base font-semibold tracking-tight">Symbol mapping</h3>
-          <p className="max-w-xl text-sm text-muted">
-            XM names instruments like <code>GOLD</code>, <code>US100Cash</code> or{' '}
-            <code>EURUSDm#</code>. Each maps to a standard name (used by the calculators) and a
-            group for filtering. Defaults are detected automatically; override any row.
-          </p>
+          <h3 className="text-base font-semibold tracking-tight">{tr('sym.title')}</h3>
+          <p className="max-w-xl text-sm text-muted">{tr('sym.body')}</p>
         </div>
         <Button
           icon={<Calculator />}
@@ -61,15 +58,15 @@ export function SymbolsTab() {
             setBusy(true)
             try {
               for (const a of accounts) await recalculate(a.id)
-              toast('Mappings applied to all synced trades')
+              toast(tr('sym.applied'))
             } catch (e) {
-              toast(e instanceof Error ? e.message : 'Recalculate failed', 'info')
+              toast(e instanceof Error ? e.message : tr('acc.recalcFailed'), 'info')
             } finally {
               setBusy(false)
             }
           }}
         >
-          {busy ? 'Applying…' : 'Apply to synced trades'}
+          {busy ? tr('sym.applying') : tr('sym.apply')}
         </Button>
       </div>
       <div className="overflow-x-auto rounded-[var(--radius-sm)] border border-line/10">
@@ -77,16 +74,16 @@ export function SymbolsTab() {
           <thead>
             <tr className="border-b hairline text-left">
               <th scope="col" className="label px-4 py-2.5">
-                Broker symbol
+                {tr('sym.broker')}
               </th>
               <th scope="col" className="label px-2 py-2.5">
-                Standard name
+                {tr('sym.standard')}
               </th>
               <th scope="col" className="label px-2 py-2.5">
-                Group
+                {tr('sym.group')}
               </th>
               <th scope="col" className="label px-4 py-2.5 text-right">
-                Source
+                {tr('sym.source')}
               </th>
             </tr>
           </thead>
@@ -131,10 +128,10 @@ export function SymbolsTab() {
                         className="text-accent underline-offset-2 hover:underline"
                         onClick={() => write(raw, null)}
                       >
-                        Custom · reset
+                        {tr('sym.custom')}
                       </button>
                     ) : (
-                      <span className="text-muted">Auto</span>
+                      <span className="text-muted">{tr('sym.auto')}</span>
                     )}
                   </td>
                 </tr>
@@ -154,13 +151,13 @@ export function SymbolsTab() {
       >
         <input
           className="field h-9 max-w-56 text-sm uppercase"
-          placeholder="Add a broker symbol"
+          placeholder={tr('sym.addPlaceholder')}
           value={extra}
           onChange={(e) => setExtra(e.target.value)}
-          aria-label="Add a broker symbol"
+          aria-label={tr('sym.addPlaceholder')}
         />
         <Button type="submit" size="sm">
-          Add
+          {tr('common.add')}
         </Button>
       </form>
     </section>

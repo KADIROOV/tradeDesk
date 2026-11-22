@@ -1,3 +1,4 @@
+import { tr } from '@/i18n'
 import { AnimatePresence, motion } from 'framer-motion'
 import { CloudUpload, X } from 'lucide-react'
 import { useState } from 'react'
@@ -24,9 +25,9 @@ export function ImportLocalBanner() {
     setBusy(true)
     try {
       const n = await importLocalTrades(real)
-      toast(`Imported ${n} trade${n === 1 ? '' : 's'} into your account`)
+      toast(tr('import.done', { n }))
     } catch (e) {
-      toast(e instanceof Error ? e.message : 'Import failed', 'info')
+      toast(e instanceof Error ? e.message : tr('common.importFailed'), 'info')
     } finally {
       setBusy(false)
     }
@@ -42,24 +43,21 @@ export function ImportLocalBanner() {
           transition={spring}
           className="glass pad-sm mb-4 flex flex-wrap items-center gap-3"
           role="region"
-          aria-label="Import local data"
+          aria-label={tr('import.aria')}
         >
           <span className="grid size-9 place-items-center rounded-xl bg-accent/15 text-accent">
             <CloudUpload className="size-4" />
           </span>
           <p className="min-w-0 flex-1 text-sm">
-            <span className="font-medium">{real.length} trades are saved only on this device.</span>{' '}
-            <span className="text-muted">
-              Import them into your account to see them everywhere. Settings and journal notes sync
-              automatically.
-            </span>
+            <span className="font-medium">{tr('import.count', { n: real.length })}</span>{' '}
+            <span className="text-muted">{tr('import.body')}</span>
           </p>
           <Button variant="primary" size="sm" onClick={() => void run()} disabled={busy}>
-            {busy ? 'Importing…' : 'Import my local data'}
+            {busy ? tr('common.importing') : tr('import.button')}
           </Button>
           <IconButton
             size="sm"
-            label="Not now"
+            label={tr('import.notNow')}
             onClick={() => void saveProfile({ settings: { localImportDismissed: true } })}
           >
             <X />

@@ -1,3 +1,4 @@
+import { tr } from '@/i18n'
 import { motion } from 'framer-motion'
 import { Eye, EyeOff, Keyboard, Palette, PanelRight, Plus } from 'lucide-react'
 import { Button, IconButton } from '@/components/ui/Button'
@@ -56,7 +57,7 @@ export function TopBar() {
   const cloudActive = useCloud((s) => s.status === 'signed-in')
 
   return (
-    <header className="sticky top-0 z-30 -mx-4 mb-5 px-4 pt-4 pb-2 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
+    <header className="sticky top-0 z-30 -mx-4 mb-5 bg-gradient-to-b from-[rgb(var(--base-rgb)/0.92)] via-[rgb(var(--base-rgb)/0.7)] to-transparent px-4 pt-4 pb-4 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
       <div className="flex items-center justify-between gap-3">
         <a
           href="#/dashboard"
@@ -65,12 +66,12 @@ export function TopBar() {
             navigate('dashboard')
           }}
           className="rounded-xl"
-          aria-label={`${APP_CONFIG.name} home`}
+          aria-label={tr('nav.home', { app: APP_CONFIG.name })}
         >
           <Logo />
         </a>
         <nav
-          aria-label="Primary"
+          aria-label={tr('nav.primary')}
           className="glass hidden items-center gap-0.5 rounded-full p-1 md:flex"
         >
           {NAV.map((n) => {
@@ -96,7 +97,7 @@ export function TopBar() {
                 )}
                 <span className="relative flex items-center gap-2">
                   <span className="hidden lg:inline">{n.icon}</span>
-                  {n.label}
+                  {tr(n.label)}
                 </span>
               </a>
             )
@@ -110,21 +111,21 @@ export function TopBar() {
               onClick={() => chooseOffline(false)}
               className="hidden sm:inline-flex"
             >
-              Sign in
+              {tr('nav.signIn')}
             </Button>
           )}
           <IconButton
-            label={hidden ? 'Show balances (H)' : 'Hide balances (H)'}
+            label={hidden ? tr('nav.showBalances') : tr('nav.hideBalances')}
             onClick={toggleHidden}
             variant="ghost"
           >
             {hidden ? <EyeOff /> : <Eye />}
           </IconButton>
-          <IconButton label="Appearance (T)" onClick={() => openSettings()} variant="ghost">
+          <IconButton label={tr('nav.settings')} onClick={() => openSettings()} variant="ghost">
             <Palette />
           </IconButton>
           <IconButton
-            label="Keyboard shortcuts (?)"
+            label={tr('nav.shortcuts')}
             onClick={() => setShortcuts(true)}
             variant="ghost"
             className="hidden lg:inline-flex"
@@ -132,7 +133,7 @@ export function TopBar() {
             <Keyboard />
           </IconButton>
           <IconButton
-            label="Strategy & plan"
+            label={tr('nav.strategy')}
             onClick={() => setMobileSidebar(true)}
             variant="ghost"
             className="lg:hidden"
@@ -140,7 +141,7 @@ export function TopBar() {
             <PanelRight />
           </IconButton>
           <IconButton
-            label="Log trade (N)"
+            label={tr('nav.logTradeKey')}
             onClick={() => openTrade()}
             variant="primary"
             className="hidden sm:inline-flex xl:hidden"
@@ -154,7 +155,7 @@ export function TopBar() {
             kbd="N"
             className="hidden xl:inline-flex"
           >
-            Log trade
+            {tr('nav.logTrade')}
           </Button>
         </div>
       </div>
@@ -171,13 +172,13 @@ export function MobileTabBar() {
       <button
         type="button"
         onClick={() => openTrade()}
-        aria-label="Log trade"
+        aria-label={tr('nav.logTrade')}
         className="btn btn-primary btn-icon fixed right-4 bottom-[calc(5.25rem+env(safe-area-inset-bottom))] z-30 !size-12 !rounded-full shadow-lg sm:hidden [&_svg]:!size-5"
       >
         <Plus />
       </button>
       <nav
-        aria-label="Primary"
+        aria-label={tr('nav.primary')}
         className="glass glass-strong fixed inset-x-3 bottom-[calc(0.75rem+env(safe-area-inset-bottom))] z-30 flex items-center justify-around rounded-[1.375rem] p-1 md:hidden"
       >
         {NAV.map((n) => {
@@ -201,7 +202,7 @@ export function MobileTabBar() {
                 />
               )}
               <span className="relative">{n.icon}</span>
-              <span className="relative">{n.label}</span>
+              <span className="relative">{tr(n.label)}</span>
             </a>
           )
         })}
@@ -211,12 +212,13 @@ export function MobileTabBar() {
 }
 
 export function Footer() {
+  const cloudActive = useCloud((s) => s.status === 'signed-in')
   return (
     <footer className="mt-10 mb-28 flex flex-col items-center justify-between gap-2 border-t hairline pt-5 text-xs text-muted sm:flex-row md:mb-8">
-      <p>{APP_CONFIG.disclaimer}</p>
+      <p>{tr('footer.disclaimer')}</p>
       <p>
-        {APP_CONFIG.name} · Your data stays in this browser. Press{' '}
-        <kbd className="rounded border border-line/15 px-1">?</kbd> for shortcuts.
+        {APP_CONFIG.name} · {cloudActive ? tr('footer.synced') : tr('footer.local')}{' '}
+        {tr('footer.shortcuts')}
       </p>
     </footer>
   )

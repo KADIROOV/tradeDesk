@@ -1,9 +1,9 @@
+import { fmtDate, tn, tr, type MsgKey } from '@/i18n'
 import {
   addDays,
   addMonths,
   endOfMonth,
   endOfWeek,
-  format,
   isSameMonth,
   startOfMonth,
   startOfWeek,
@@ -39,7 +39,8 @@ import { useUi } from '@/store/ui'
 import { EditableChecklist } from '@/features/sidebar/Sidebar'
 import { JournalEmpty } from '@/features/journal/JournalPage'
 
-const WEEKDAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']
+// Monday-first weekday names in the current language (5 Jan 2026 is a Monday).
+const weekdays = () => Array.from({ length: 7 }, (_, i) => fmtDate(new Date(2026, 0, 5 + i), 'EEE'))
 
 /** Tiny amounts for phone-sized cells: +196, −1.2k. */
 function shortAmount(v: number): string {
@@ -78,7 +79,7 @@ export default function CalendarPage() {
   }, [month])
 
   const monthDays = [...summaries.values()].filter((d) =>
-    d.date.startsWith(format(month, 'yyyy-MM')),
+    d.date.startsWith(fmtDate(month, 'yyyy-MM')),
   )
   const maxAbs = Math.max(1, ...[...summaries.values()].map((d) => Math.abs(d.pnl)))
   const monthTotal = monthDays.reduce((s, d) => s + d.pnl, 0)
@@ -106,18 +107,18 @@ export default function CalendarPage() {
     <motion.div variants={stagger} initial="hidden" animate="show" className="flex flex-col gap-4">
       <motion.div variants={stagger} className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="label">Calendar</p>
+          <p className="label">{tr('cal.label')}</p>
           <h1 className="mt-1 text-3xl font-semibold tracking-tight">
-            {format(month, 'MMMM')}{' '}
-            <span className="serif text-muted">{format(month, 'yyyy')}</span>
+            {fmtDate(month, 'LLLL')}{' '}
+            <span className="serif text-muted">{fmtDate(month, 'yyyy')}</span>
           </h1>
         </div>
         <div className="flex w-full items-center gap-2 sm:w-auto">
-          <IconButton label="Previous month" variant="ghost" onClick={() => go(-1)}>
+          <IconButton label={tr('cal.prevMonth')} variant="ghost" onClick={() => go(-1)}>
             <ChevronLeft />
           </IconButton>
           <select
-            aria-label="Month"
+            aria-label={tr('cal.month')}
             className="field h-10 min-w-0 flex-1 sm:w-auto sm:flex-none"
             value={month.getMonth()}
             onChange={(e) => {
@@ -128,12 +129,12 @@ export default function CalendarPage() {
           >
             {Array.from({ length: 12 }, (_, i) => (
               <option key={i} value={i}>
-                {format(new Date(2000, i, 1), 'MMMM')}
+                {fmtDate(new Date(2000, i, 1), 'LLLL')}
               </option>
             ))}
           </select>
           <select
-            aria-label="Year"
+            aria-label={tr('cal.year')}
             className="field h-10 w-24 min-w-0"
             value={month.getFullYear()}
             onChange={(e) => {
@@ -148,7 +149,7 @@ export default function CalendarPage() {
               </option>
             ))}
           </select>
-          <IconButton label="Next month" variant="ghost" onClick={() => go(1)}>
+          <IconButton label={tr('cal.nextMonth')} variant="ghost" onClick={() => go(1)}>
             <ChevronRight />
           </IconButton>
           <Button
@@ -158,7 +159,7 @@ export default function CalendarPage() {
               setMonth(now)
             }}
           >
-            Today
+            {tr('common.today')}
           </Button>
         </div>
       </motion.div>
@@ -171,16 +172,16 @@ export default function CalendarPage() {
         <>
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             <Stat
-              label="Month P&L"
+              label={tr('cal.monthPnl')}
               value={
                 <span className={monthTotal >= 0 ? 'text-pos' : 'text-neg'}>
                   {formatCurrency(monthTotal, { hidden, signed: true })}
                 </span>
               }
             />
-            <Stat label="Trading days" value={monthDays.length} />
+            <Stat label={tr('cal.tradingDays')} value={monthDays.length} />
             <Stat
-              label="Green days"
+              label={tr('cal.greenDays')}
               value={
                 monthDays.length
                   ? `${greenDays} · ${formatPercent(greenDays / monthDays.length, 0)}`
@@ -188,7 +189,7 @@ export default function CalendarPage() {
               }
             />
             <Stat
-              label="Best day"
+              label={tr('cal.bestDay')}
               value={
                 <span className="text-pos">
                   {best > 0 ? formatCurrency(best, { hidden, signed: true }) : '—'}
@@ -196,21 +197,21 @@ export default function CalendarPage() {
               }
               sub={
                 bestDay
-                  ? format(new Date(`${bestDay.date}T00:00:00`), 'EEEE d MMM')
-                  : `${monthTrades} trades`
+                  ? fmtDate(new Date(`${bestDay.date}T00:00:00`), 'EEEE d MMM')
+                  : tn('n.trades', monthTrades)
               }
             />
           </div>
 
           <Card padded="sm" className="overflow-hidden">
             <div className="grid grid-cols-7 gap-1.5 md:grid-cols-[repeat(7,minmax(0,1fr))_minmax(0,1.1fr)]">
-              {WEEKDAYS.map((d) => (
+              {weekdays().map((d) => (
                 <div key={d} className="label px-1 pb-1 text-center">
                   <span className="hidden sm:inline">{d}</span>
                   <span className="sm:hidden">{d[0]}</span>
                 </div>
               ))}
-              <div className="label hidden px-1 pb-1 text-center md:block">Week</div>
+              <div className="label hidden px-1 pb-1 text-center md:block">{tr('common.week')}</div>
             </div>
             <div className="relative">
               <AnimatePresence mode="popLayout" initial={false} custom={dir}>
@@ -251,7 +252,15 @@ export default function CalendarPage() {
                               key={k}
                               type="button"
                               onClick={() => setSelected(k)}
-                              aria-label={`${format(d, 'EEEE d MMMM')}${s ? `, ${s.count} trades, ${formatCurrency(s.pnl, { hidden, signed: true })}` : ', no trades'}`}
+                              aria-label={
+                                s
+                                  ? tr('cal.dayAria', {
+                                      date: fmtDate(d, 'EEEE d MMMM'),
+                                      count: tn('n.trades', s.count),
+                                      pnl: formatCurrency(s.pnl, { hidden, signed: true }),
+                                    })
+                                  : tr('cal.noTradesAria', { date: fmtDate(d, 'EEEE d MMMM') })
+                              }
                               className={`group relative flex aspect-square flex-col rounded-[calc(var(--radius-sm)-2px)] border p-1 text-left transition-transform active:scale-95 sm:aspect-[5/4] sm:p-2 ${
                                 inMonth ? 'border-line/8' : 'border-transparent opacity-35'
                               } ${dateKey(d) === todayKey ? 'ring-1 ring-accent' : ''} hover:border-line/25`}
@@ -265,7 +274,7 @@ export default function CalendarPage() {
                               <span
                                 className={`tabular text-[0.7rem] font-medium sm:text-xs ${dateKey(d) === todayKey ? 'text-accent' : 'text-muted'}`}
                               >
-                                {format(d, 'd')}
+                                {fmtDate(d, 'd')}
                               </span>
                               {hasNote && (
                                 <span
@@ -286,7 +295,7 @@ export default function CalendarPage() {
                                     {hidden ? '•' : shortAmount(s.pnl)}
                                   </span>
                                   <span className="hidden text-[0.65rem] text-muted sm:block">
-                                    {s.count} trade{s.count > 1 ? 's' : ''}
+                                    {tn('n.trades', s.count)}
                                   </span>
                                 </span>
                               )}
@@ -294,7 +303,7 @@ export default function CalendarPage() {
                           )
                         })}
                         <div className="col-span-7 flex items-center justify-between rounded-[calc(var(--radius-sm)-2px)] bg-line/5 px-3 py-1.5 md:col-span-1 md:flex-col md:items-start md:justify-center md:py-2">
-                          <span className="label md:hidden">Week</span>
+                          <span className="label md:hidden">{tr('common.week')}</span>
                           <span
                             className={`tabular text-sm font-semibold ${weekTotal > 0 ? 'text-pos' : weekTotal < 0 ? 'text-neg' : 'text-muted'}`}
                           >
@@ -307,7 +316,7 @@ export default function CalendarPage() {
                               : '—'}
                           </span>
                           <span className="text-[0.65rem] text-muted">
-                            {weekCount ? `${weekCount} trade${weekCount === 1 ? '' : 's'}` : ''}
+                            {weekCount ? tn('n.trades', weekCount) : ''}
                           </span>
                         </div>
                       </div>
@@ -317,7 +326,7 @@ export default function CalendarPage() {
               </AnimatePresence>
             </div>
             <div className="mt-3 flex items-center justify-end gap-2 text-[0.65rem] text-muted">
-              <span>Loss</span>
+              <span>{tr('common.loss')}</span>
               {[0.55, 0.3, 0.1].map((a) => (
                 <span
                   key={`n${a}`}
@@ -332,7 +341,7 @@ export default function CalendarPage() {
                   style={{ background: `rgb(var(--pos-rgb) / ${a})` }}
                 />
               ))}
-              <span>Profit</span>
+              <span>{tr('common.profit')}</span>
             </div>
           </Card>
         </>
@@ -352,12 +361,12 @@ function Stat({ label, value, sub }: { label: string; value: ReactNode; sub?: st
   )
 }
 
-const MOODS: { v: Mood; label: string; icon: ReactNode }[] = [
-  { v: 1, label: 'Awful', icon: <Angry /> },
-  { v: 2, label: 'Low', icon: <Frown /> },
-  { v: 3, label: 'Okay', icon: <Meh /> },
-  { v: 4, label: 'Good', icon: <Smile /> },
-  { v: 5, label: 'Great', icon: <Laugh /> },
+const MOODS: { v: Mood; label: MsgKey; icon: ReactNode }[] = [
+  { v: 1, label: 'cal.moodAwful', icon: <Angry /> },
+  { v: 2, label: 'cal.moodLow', icon: <Frown /> },
+  { v: 3, label: 'cal.moodOkay', icon: <Meh /> },
+  { v: 4, label: 'cal.moodGood', icon: <Smile /> },
+  { v: 5, label: 'cal.moodGreat', icon: <Laugh /> },
 ]
 
 function DayPanel({ day, onClose }: { day: string | null; onClose: () => void }) {
@@ -368,8 +377,8 @@ function DayPanel({ day, onClose }: { day: string | null; onClose: () => void })
     <Drawer
       open={!!day}
       onClose={onClose}
-      title={shown ? format(new Date(`${shown}T00:00:00`), 'EEEE, d MMMM') : ''}
-      subtitle="Trades, notes and rules for the day"
+      title={shown ? fmtDate(new Date(`${shown}T00:00:00`), 'EEEE, d MMMM') : ''}
+      subtitle={tr('cal.dayPanel')}
     >
       {shown && <DayContent day={shown} />}
     </Drawer>
@@ -419,10 +428,10 @@ function DayContent({ day }: { day: string }) {
       <section>
         <div className="mb-2 flex items-center justify-between">
           <h3 className="label">
-            Trades
+            {tr('cal.trades')}
             {closeBalance !== null && (
               <span className="ml-2 font-normal tracking-normal normal-case">
-                balance at close {formatCurrency(closeBalance, { hidden })}
+                {tr('cal.balanceAtClose', { v: formatCurrency(closeBalance, { hidden }) })}
               </span>
             )}
           </h3>
@@ -437,8 +446,8 @@ function DayContent({ day }: { day: string }) {
         {list.length === 0 ? (
           <EmptyState
             icon={<CalendarDays />}
-            title="No trades this day"
-            body="Rest days count too. Add a note about what you observed."
+            title={tr('cal.noTradesTitle')}
+            body={tr('cal.noTradesBody')}
           />
         ) : (
           <ul className="divide-hairline overflow-hidden rounded-[var(--radius-sm)] border border-line/10">
@@ -459,7 +468,7 @@ function DayContent({ day }: { day: string }) {
                       </span>
                     </span>
                     <span className="truncate text-xs text-muted">
-                      {formatInZone(tradeTime(t), tz, 'time')} · {t.setup ?? 'No setup'} ·{' '}
+                      {formatInZone(tradeTime(t), tz, 'time')} · {t.setup ?? tr('cal.noSetup')} ·{' '}
                       {formatR(tradeR(t))}
                     </span>
                   </span>
@@ -478,21 +487,21 @@ function DayContent({ day }: { day: string }) {
           className="mt-2"
           onClick={() => openTrade()}
         >
-          Log a trade
+          {tr('cal.logTrade')}
         </Button>
       </section>
 
       <section>
-        <h3 className="label mb-2">Mood</h3>
-        <div className="flex gap-1.5" role="radiogroup" aria-label="Mood">
+        <h3 className="label mb-2">{tr('cal.mood')}</h3>
+        <div className="flex gap-1.5" role="radiogroup" aria-label={tr('cal.mood')}>
           {MOODS.map((m) => (
             <button
               key={m.v}
               type="button"
               role="radio"
               aria-checked={entry.mood === m.v}
-              aria-label={m.label}
-              title={m.label}
+              aria-label={tr(m.label)}
+              title={tr(m.label)}
               onClick={() => setDay(day, { mood: entry.mood === m.v ? undefined : m.v })}
               className={`grid size-10 place-items-center rounded-full border transition-transform active:scale-90 [&_svg]:size-5 ${entry.mood === m.v ? 'scale-110 border-accent/60 bg-accent/15 text-accent' : 'border-line/10 text-muted hover:text-fg'}`}
             >
@@ -504,27 +513,25 @@ function DayContent({ day }: { day: string }) {
 
       <section>
         <div className="mb-2 flex items-center justify-between">
-          <h3 className="label">Journal note</h3>
+          <h3 className="label">{tr('cal.note')}</h3>
           <Segmented
-            label="Note mode"
+            label={tr('cal.noteMode')}
             size="sm"
             value={mode}
             onChange={setMode}
             options={[
-              { value: 'write', label: 'Write' },
-              { value: 'preview', label: 'Preview' },
+              { value: 'write', label: tr('cal.write') },
+              { value: 'preview', label: tr('cal.preview') },
             ]}
           />
         </div>
         {mode === 'write' ? (
           <textarea
             className="field min-h-40"
-            placeholder={
-              'Markdown supported.\n\n**What went well?**\n- \n\n**What to improve?**\n- '
-            }
+            placeholder={tr('cal.notePlaceholder')}
             value={entry.note}
             onChange={(e) => setDay(day, { note: e.target.value })}
-            aria-label="Daily journal note"
+            aria-label={tr('cal.noteAria')}
           />
         ) : (
           <div
@@ -534,7 +541,7 @@ function DayContent({ day }: { day: string }) {
             {entry.note ? (
               <ReactMarkdown>{entry.note}</ReactMarkdown>
             ) : (
-              <p className="text-muted">Nothing written yet.</p>
+              <p className="text-muted">{tr('cal.nothingYet')}</p>
             )}
           </div>
         )}
@@ -542,9 +549,9 @@ function DayContent({ day }: { day: string }) {
 
       <section>
         <div className="mb-2 flex items-center justify-between">
-          <h3 className="label">Rules checklist</h3>
+          <h3 className="label">{tr('cal.rulesChecklist')}</h3>
           <span className="tabular text-xs text-muted">
-            {kept}/{rules.length} kept
+            {tr('cal.kept', { n: kept, total: rules.length })}
           </span>
         </div>
         <EditableChecklist

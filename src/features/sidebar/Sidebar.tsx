@@ -1,3 +1,4 @@
+import { fmtDate, tr } from '@/i18n'
 import { AnimatePresence, motion } from 'framer-motion'
 import { ChevronRight, Pencil, Plus, Trash2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
@@ -13,7 +14,7 @@ import { useSettings } from '@/store/settings'
 import { useTimezone, useTradeList } from '@/data/useTradeData'
 import { tradeTime } from '@/lib/finance/metrics'
 import { useUi } from '@/store/ui'
-import { format, subDays } from 'date-fns'
+import { subDays } from 'date-fns'
 
 function Progress({ done, total }: { done: number; total: number }) {
   const pct = total ? (done / total) * 100 : 0
@@ -65,12 +66,16 @@ export function EditableChecklist({
                 <input
                   className="field h-8 text-sm"
                   defaultValue={i.text}
-                  aria-label="Edit item"
+                  aria-label={tr('side.editItem')}
                   onBlur={(e) =>
                     e.target.value.trim() && editItem(list, i.id, e.target.value.trim())
                   }
                 />
-                <IconButton size="sm" label="Remove item" onClick={() => removeItem(list, i.id)}>
+                <IconButton
+                  size="sm"
+                  label={tr('side.removeItem')}
+                  onClick={() => removeItem(list, i.id)}
+                >
                   <Trash2 />
                 </IconButton>
               </>
@@ -92,12 +97,12 @@ export function EditableChecklist({
           >
             <input
               className="field h-8 text-sm"
-              placeholder="New item"
+              placeholder={tr('side.newItem')}
               value={draft}
               onChange={(e) => setDraft(e.target.value)}
-              aria-label="New item"
+              aria-label={tr('side.newItem')}
             />
-            <IconButton size="sm" type="submit" label="Add item" variant="ghost">
+            <IconButton size="sm" type="submit" label={tr('side.addItem')} variant="ghost">
               <Plus />
             </IconButton>
           </form>
@@ -109,7 +114,7 @@ export function EditableChecklist({
           onClick={() => setEditing((v) => !v)}
           className="ml-auto"
         >
-          {editing ? 'Done' : 'Edit'}
+          {editing ? tr('common.done') : tr('common.edit')}
         </Button>
       </div>
     </div>
@@ -131,11 +136,11 @@ function PlanCard() {
           <motion.span animate={{ rotate: planCollapsed ? 0 : 90 }} transition={{ duration: 0.2 }}>
             <ChevronRight className="size-3.5 text-muted" />
           </motion.span>
-          <h2 className="label">Pre-market plan</h2>
+          <h2 className="label">{tr('side.plan')}</h2>
         </button>
         {!planCollapsed && (
           <Button size="sm" variant="quiet" onClick={() => setEditing((v) => !v)}>
-            {editing ? 'Done' : 'Edit'}
+            {editing ? tr('common.done') : tr('common.edit')}
           </Button>
         )}
       </div>
@@ -154,7 +159,7 @@ function PlanCard() {
                   className="field min-h-36 font-mono text-xs"
                   value={plan}
                   onChange={(e) => setPlan(e.target.value)}
-                  aria-label="Pre-market plan (markdown)"
+                  aria-label={tr('side.planAria')}
                 />
               ) : (
                 <div className="prose-md cursor-text" onDoubleClick={() => setEditing(true)}>
@@ -177,7 +182,11 @@ function ChecklistCard() {
   const checked = getDay(days, key).checklist
   const done = items.filter((i) => checked[i.id]).length
   return (
-    <Card padded="sm" label="Checklist" action={<Progress done={done} total={items.length} />}>
+    <Card
+      padded="sm"
+      label={tr('side.checklist')}
+      action={<Progress done={done} total={items.length} />}
+    >
       <EditableChecklist
         list="checklist"
         items={items}
@@ -202,7 +211,7 @@ function RulesCard() {
     const kept = rules.filter((x) => r[x.id]).length
     return {
       k,
-      label: format(d, 'EEEEE'),
+      label: fmtDate(d, 'EEEEE'),
       pct: rules.length ? kept / rules.length : 0,
       any: Object.keys(r).length > 0,
     }
@@ -210,7 +219,7 @@ function RulesCard() {
   return (
     <Card
       padded="sm"
-      label="Session rules kept"
+      label={tr('side.rulesKept')}
       action={<Progress done={done} total={rules.length} />}
     >
       <EditableChecklist
@@ -219,10 +228,7 @@ function RulesCard() {
         checked={today}
         onToggle={(id) => toggle(key, id)}
       />
-      <div
-        className="mt-4 flex items-end justify-between gap-1"
-        aria-label="Rules kept, last 7 days"
-      >
+      <div className="mt-4 flex items-end justify-between gap-1" aria-label={tr('side.rules7')}>
         {week.map((d) => (
           <div
             key={d.k}
@@ -258,9 +264,9 @@ function RecentTrades() {
     [trades],
   )
   return (
-    <Card padded="sm" label="Recent trades">
+    <Card padded="sm" label={tr('side.recent')}>
       {recent.length === 0 ? (
-        <p className="text-sm text-muted">Nothing logged yet.</p>
+        <p className="text-sm text-muted">{tr('side.nothing')}</p>
       ) : (
         <ul className="-mx-1.5 flex flex-col">
           {recent.map((t) => (
@@ -304,7 +310,7 @@ function SidebarContent() {
 
 export function Sidebar() {
   return (
-    <aside aria-label="Strategy and plan" className="hidden lg:block">
+    <aside aria-label={tr('side.aria')} className="hidden lg:block">
       <div className="pb-4">
         <SidebarContent />
       </div>
@@ -319,8 +325,8 @@ export function MobileSidebar() {
     <Drawer
       open={open}
       onClose={() => set(false)}
-      title="Strategy & plan"
-      subtitle="Today’s plan, checklist and rules"
+      title={tr('nav.strategy')}
+      subtitle={tr('side.mobileSub')}
       width="sm:max-w-sm"
     >
       <SidebarContent />

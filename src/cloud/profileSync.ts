@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import { sanitizeTheme } from '@/features/theme/engine'
+import { isLang } from '@/i18n'
 import type { SymbolSpec } from '@/lib/types'
 import { useJournal, type DayEntry, type ListItem } from '@/store/journal'
 import { useSettings } from '@/store/settings'
@@ -29,6 +30,7 @@ export function useProfileSync() {
     // 1. Cloud → device (the account wins, except a background uploaded on this device).
     const settings = useSettings.getState()
     settings.setTimezone(profile.timezone)
+    if (isLang(st.language)) settings.setLanguage(st.language)
     if (isObj(st.theme)) {
       const theme = sanitizeTheme(st.theme)
       const local = settings.theme.background
@@ -66,6 +68,7 @@ export function useProfileSync() {
           timezone: s.timezone,
           settings: {
             theme: s.theme,
+            language: s.language,
             specs: s.symbolSpecs,
             journal: { days: j.days, plan: j.plan, checklist: j.checklist, rules: j.rules },
           },
@@ -76,6 +79,7 @@ export function useProfileSync() {
       if (
         s.theme !== prev.theme ||
         s.timezone !== prev.timezone ||
+        s.language !== prev.language ||
         s.symbolSpecs !== prev.symbolSpecs
       )
         push()

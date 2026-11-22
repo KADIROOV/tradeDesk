@@ -1,3 +1,4 @@
+import { type MsgKey, tr } from '@/i18n'
 import { AnimatePresence, motion } from 'framer-motion'
 import { useState } from 'react'
 import { Segmented } from '@/components/ui/controls'
@@ -9,14 +10,14 @@ import { SpecsTable } from './SpecsTable'
 
 type Tool = 'size' | 'pnl' | 'rr' | 'ruin' | 'compound' | 'sessions' | 'specs'
 
-const TOOLS: { value: Tool; label: string }[] = [
-  { value: 'size', label: 'Position size' },
-  { value: 'pnl', label: 'P&L' },
-  { value: 'rr', label: 'RR & break-even' },
-  { value: 'ruin', label: 'Risk of ruin' },
-  { value: 'compound', label: 'Compounding' },
-  { value: 'sessions', label: 'Sessions' },
-  { value: 'specs', label: 'Symbol specs' },
+const TOOLS: { value: Tool; label: MsgKey }[] = [
+  { value: 'size', label: 'calc.size' },
+  { value: 'pnl', label: 'calc.pnl' },
+  { value: 'rr', label: 'calc.rr' },
+  { value: 'ruin', label: 'calc.ruin' },
+  { value: 'compound', label: 'calc.compound' },
+  { value: 'sessions', label: 'calc.sessions' },
+  { value: 'specs', label: 'calc.specs' },
 ]
 
 export default function CalculatorsPage() {
@@ -24,9 +25,10 @@ export default function CalculatorsPage() {
   return (
     <motion.div variants={stagger} initial="hidden" animate="show" className="flex flex-col gap-4">
       <motion.div variants={fadeUp}>
-        <p className="label">Calculators</p>
+        <p className="label">{tr('calc.label')}</p>
         <h1 className="mt-1 text-3xl font-semibold tracking-tight">
-          Size it <span className="serif text-accent">before</span> you take it
+          {tr('calc.title')} <span className="serif text-accent">{tr('calc.titleAccent')}</span>{' '}
+          {tr('calc.titleEnd')}
         </h1>
       </motion.div>
       <motion.div
@@ -34,10 +36,10 @@ export default function CalculatorsPage() {
         className="no-scrollbar -mx-4 overflow-x-auto px-4 sm:mx-0 sm:px-0"
       >
         <Segmented
-          label="Calculator"
+          label={tr('calc.tool')}
           value={tool}
           onChange={setTool}
-          options={TOOLS}
+          options={TOOLS.map((o) => ({ value: o.value, label: tr(o.label) }))}
           className="min-w-max"
         />
       </motion.div>

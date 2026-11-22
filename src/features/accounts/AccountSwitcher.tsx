@@ -1,3 +1,4 @@
+import { tr } from '@/i18n'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Check, ChevronDown, Layers, LogOut, PencilLine, Settings2 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
@@ -35,10 +36,10 @@ export function AccountSwitcher() {
   const current = accounts.find((a) => a.id === sel)
   const label =
     sel === 'all'
-      ? 'All accounts'
+      ? tr('acct.all')
       : sel === 'manual'
-        ? 'Manual trades'
-        : (current?.name ?? 'All accounts')
+        ? tr('acct.manual')
+        : (current?.name ?? tr('acct.all'))
   const statuses = accounts.map((a) => connectionStatus(a, now))
   const summary = current
     ? connectionStatus(current, now)
@@ -63,7 +64,7 @@ export function AccountSwitcher() {
         aria-haspopup="menu"
         aria-expanded={open}
         className="btn btn-ghost gap-2 !px-3"
-        title="Switch account"
+        title={tr('acct.switch')}
       >
         {accounts.length > 0 && <StatusDot status={summary} />}
         <span className="hidden max-w-36 truncate xl:inline">{label}</span>
@@ -79,7 +80,7 @@ export function AccountSwitcher() {
             transition={spring}
             className="glass glass-strong absolute right-0 z-50 mt-2 w-72 origin-top-right p-1.5 shadow-2xl"
           >
-            <p className="label px-2.5 pt-1.5 pb-1">View</p>
+            <p className="label px-2.5 pt-1.5 pb-1">{tr('acct.view')}</p>
             <button
               role="menuitemradio"
               aria-checked={sel === 'all'}
@@ -87,7 +88,7 @@ export function AccountSwitcher() {
               onClick={() => pick('all')}
             >
               <Layers className="size-4 text-muted" />
-              <span className="flex-1">All accounts</span>
+              <span className="flex-1">{tr('acct.all')}</span>
               {sel === 'all' && <Check className="size-4 text-accent" />}
             </button>
             {accounts.map((a) => (
@@ -103,7 +104,7 @@ export function AccountSwitcher() {
                   <span className="block truncate">{a.name}</span>
                   <span className="block truncate text-xs text-muted">
                     {a.broker}
-                    {a.login ? ` · ${a.login}` : ' · not connected yet'}
+                    {a.login ? ` · ${a.login}` : ` · ${tr('acct.notConnected')}`}
                   </span>
                 </span>
                 {sel === a.id && <Check className="size-4 text-accent" />}
@@ -116,7 +117,7 @@ export function AccountSwitcher() {
               onClick={() => pick('manual')}
             >
               <PencilLine className="size-4 text-muted" />
-              <span className="flex-1">Manual trades</span>
+              <span className="flex-1">{tr('acct.manual')}</span>
               {sel === 'manual' && <Check className="size-4 text-accent" />}
             </button>
             <div className="my-1.5 border-t hairline" />
@@ -129,12 +130,12 @@ export function AccountSwitcher() {
               }}
             >
               <Settings2 className="size-4 text-muted" />
-              {accounts.length ? 'Manage accounts' : 'Connect MT5'}
+              {accounts.length ? tr('acct.manage') : tr('acc.connect')}
             </button>
             <button role="menuitem" className={item} onClick={() => void signOut()}>
               <LogOut className="size-4 text-muted" />
               <span className="min-w-0 flex-1 truncate">
-                Sign out <span className="text-xs text-muted">{email}</span>
+                {tr('acct.signOut')} <span className="text-xs text-muted">{email}</span>
               </span>
             </button>
           </motion.div>

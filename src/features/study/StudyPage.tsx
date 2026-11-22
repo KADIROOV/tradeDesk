@@ -1,3 +1,4 @@
+import { tr } from '@/i18n'
 import { AnimatePresence, motion } from 'framer-motion'
 import { CircleCheck, GraduationCap, Heart, Link, Play, Search, Trash2 } from 'lucide-react'
 import { useEffect, useMemo, useRef, useState } from 'react'
@@ -49,12 +50,12 @@ export default function StudyPage() {
     <motion.div variants={stagger} initial="hidden" animate="show" className="flex flex-col gap-4">
       <motion.div variants={fadeUp} className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="label">Study</p>
+          <p className="label">{tr('study.label')}</p>
           <h1 className="mt-1 text-3xl font-semibold tracking-tight">
-            Learn <span className="serif text-accent">deliberately</span>
+            {tr('study.title')} <span className="serif text-accent">{tr('study.titleAccent')}</span>
           </h1>
           <p className="mt-1 text-sm text-muted">
-            {watchedCount} of {all.length} lessons watched · curated from well-known educators
+            {tr('study.progress', { w: watchedCount, n: all.length })}
           </p>
         </div>
         <AddLink />
@@ -102,16 +103,16 @@ export default function StudyPage() {
             ref={searchRef}
             type="search"
             className="field pl-9"
-            placeholder="Search lessons…  ( / )"
+            placeholder={tr('study.search')}
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            aria-label="Search lessons"
+            aria-label={tr('study.searchAria')}
           />
         </div>
         <div
           className="no-scrollbar -mx-4 flex gap-1.5 overflow-x-auto px-4 sm:mx-0 sm:flex-wrap sm:px-0"
           role="tablist"
-          aria-label="Category"
+          aria-label={tr('study.category')}
         >
           {(['All', 'Favorites', ...cats] as Filter[]).map((c) => (
             <button
@@ -131,7 +132,7 @@ export default function StudyPage() {
               )}
               <span className="relative flex items-center gap-1">
                 {c === 'Favorites' && <Heart className="size-3" />}
-                {c}
+                {c === 'All' ? tr('study.all') : c === 'Favorites' ? tr('study.favorites') : c}
               </span>
             </button>
           ))}
@@ -310,7 +311,7 @@ function Player({ lesson, onClose }: { lesson: Lesson | null; onClose: () => voi
               icon={<CircleCheck />}
               onClick={() => toggleWatched(l.youtubeId)}
             >
-              {isWatched ? 'Watched' : 'Mark as watched'}
+              {isWatched ? tr('study.watched') : tr('study.markWatched')}
             </Button>
           </div>
         </>
@@ -362,7 +363,7 @@ function AddLink() {
           <Link className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted" />
           <input
             className="field pl-9"
-            placeholder="Paste a YouTube link to add"
+            placeholder={tr('study.paste')}
             value={url}
             aria-invalid={!!error}
             onChange={(e) => {
@@ -373,7 +374,7 @@ function AddLink() {
           />
         </div>
         <Button type="submit" variant="primary" disabled={busy || !url.trim()}>
-          {busy ? 'Adding…' : 'Add'}
+          {busy ? tr('study.adding') : tr('study.add')}
         </Button>
       </div>
       {error && (

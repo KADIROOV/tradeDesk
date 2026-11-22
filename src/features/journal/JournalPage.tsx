@@ -1,4 +1,5 @@
-import { endOfWeek, format, startOfWeek } from 'date-fns'
+import { fmtDate, tn, tr } from '@/i18n'
+import { endOfWeek, startOfWeek } from 'date-fns'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   Download,
@@ -31,7 +32,7 @@ import { useTrades } from '@/store/trades'
 import { useUi } from '@/store/ui'
 import { useCloud } from '@/cloud/store'
 import { useTimezone, useTradeActions, useTradeList } from '@/data/useTradeData'
-import { SESSION_LABEL } from './constants'
+import { emotionLabel, SESSION_LABEL, sessionLabel } from './constants'
 
 type Tab = 'trades' | 'daily' | 'weekly'
 type Outcome = 'all' | 'win' | 'loss'
@@ -107,13 +108,13 @@ export default function JournalPage() {
           <Card padded="sm" className="flex flex-col gap-3">
             <div className="flex flex-wrap items-center gap-2">
               <Segmented
-                label="Journal view"
+                label={tr('journal.view')}
                 value={tab}
                 onChange={setTab}
                 options={[
-                  { value: 'trades', label: 'Trades' },
-                  { value: 'daily', label: 'Daily' },
-                  { value: 'weekly', label: 'Weekly' },
+                  { value: 'trades', label: tr('journal.tabTrades') },
+                  { value: 'daily', label: tr('journal.tabDaily') },
+                  { value: 'weekly', label: tr('journal.tabWeekly') },
                 ]}
               />
               <div className="relative min-w-48 flex-1">
@@ -122,22 +123,26 @@ export default function JournalPage() {
                   ref={searchRef}
                   type="search"
                   className="field pl-9"
-                  placeholder="Search symbol, setup, notes…  ( / )"
+                  placeholder={tr('journal.search')}
                   value={q}
                   onChange={(e) => setQ(e.target.value)}
-                  aria-label="Search trades"
+                  aria-label={tr('journal.searchAria')}
                 />
               </div>
               {tab === 'trades' && (
                 <Segmented
-                  label="Layout"
+                  label={tr('journal.layout')}
                   value={view}
                   onChange={setView}
                   options={[
-                    { value: 'list', label: <span className="sr-only">List</span>, icon: <List /> },
+                    {
+                      value: 'list',
+                      label: <span className="sr-only">{tr('journal.list')}</span>,
+                      icon: <List />,
+                    },
                     {
                       value: 'grid',
-                      label: <span className="sr-only">Grid</span>,
+                      label: <span className="sr-only">{tr('journal.grid')}</span>,
                       icon: <LayoutGrid />,
                     },
                   ]}
@@ -146,54 +151,57 @@ export default function JournalPage() {
             </div>
             <div className="flex flex-wrap items-center gap-2">
               <FilterSelect
-                label="Symbol"
+                label={tr('journal.symbol')}
                 value={symbol}
                 onChange={setSymbol}
                 options={[
-                  ['all', 'All symbols'],
+                  ['all', tr('journal.allSymbols')],
                   ...symbols.map((s) => [s, s] as [string, string]),
                 ]}
               />
               <FilterSelect
-                label="Outcome"
+                label={tr('journal.outcome')}
                 value={outcome}
                 onChange={(v) => setOutcome(v as Outcome)}
                 options={[
-                  ['all', 'Wins & losses'],
-                  ['win', 'Wins'],
-                  ['loss', 'Losses'],
+                  ['all', tr('journal.winsLosses')],
+                  ['win', tr('journal.wins')],
+                  ['loss', tr('journal.losses')],
                 ]}
               />
               <FilterSelect
-                label="Session"
+                label={tr('journal.session')}
                 value={session}
                 onChange={(v) => setSession(v as Session | 'all')}
                 options={[
-                  ['all', 'All sessions'],
+                  ['all', tr('journal.allSessions')],
                   ...(Object.keys(SESSION_LABEL) as Session[]).map(
-                    (s) => [s, SESSION_LABEL[s]] as [string, string],
+                    (s) => [s, sessionLabel(s)] as [string, string],
                   ),
                 ]}
               />
               <FilterSelect
-                label="Setup"
+                label={tr('journal.setup')}
                 value={setup}
                 onChange={setSetup}
-                options={[['all', 'All setups'], ...setups.map((s) => [s, s] as [string, string])]}
+                options={[
+                  ['all', tr('journal.allSetups')],
+                  ...setups.map((s) => [s, s] as [string, string]),
+                ]}
               />
               <FilterSelect
-                label="Rules"
+                label={tr('journal.rules')}
                 value={rulesOnly}
                 onChange={(v) => setRulesOnly(v as 'all' | 'kept' | 'broken')}
                 options={[
-                  ['all', 'Any rules'],
-                  ['kept', 'Rules kept'],
-                  ['broken', 'Rules broken'],
+                  ['all', tr('journal.anyRules')],
+                  ['kept', tr('journal.rulesKept')],
+                  ['broken', tr('journal.rulesBroken')],
                 ]}
               />
               {activeFilters > 0 && (
                 <Button size="sm" variant="quiet" onClick={clearFilters}>
-                  Clear {activeFilters}
+                  {tr('journal.clearN', { n: activeFilters })}
                 </Button>
               )}
             </div>
@@ -203,9 +211,9 @@ export default function JournalPage() {
             <Card>
               <EmptyState
                 icon={<Search />}
-                title="No trades match"
-                body="Try a different search or clear the filters."
-                action={<Button onClick={clearFilters}>Clear filters</Button>}
+                title={tr('journal.noMatchTitle')}
+                body={tr('journal.noMatchBody')}
+                action={<Button onClick={clearFilters}>{tr('journal.clearFilters')}</Button>}
               />
             </Card>
           ) : tab === 'trades' ? (
@@ -255,8 +263,13 @@ function FilteredSummary({ trades, total }: { trades: Trade[]; total: number }) 
   const s = computeStats(trades)
   return (
     <p className="text-xs text-muted">
-      {trades.length === total ? `${total} trades` : `${trades.length} of ${total} trades`} · Win
-      rate {formatPercent(s.winRate, 0)} · Net{' '}
+      {tr('journal.summary', {
+        count:
+          trades.length === total
+            ? tn('n.trades', total)
+            : tr('journal.ofTotal', { n: trades.length, total }),
+        wr: formatPercent(s.winRate, 0),
+      })}{' '}
       <span className={s.totalPnl >= 0 ? 'text-pos' : 'text-neg'}>
         {formatCurrency(s.totalPnl, { hidden, signed: true })}
       </span>
@@ -290,11 +303,11 @@ function PageHeader({ count }: { count: number }) {
     try {
       await actions.importMany(r.trades)
     } catch (e) {
-      toast(e instanceof Error ? e.message : 'Import failed', 'info')
+      toast(e instanceof Error ? e.message : tr('common.importFailed'), 'info')
       return
     }
     toast(
-      `Imported ${r.trades.length} trades${r.skipped ? ` · skipped ${r.skipped}` : ''}`,
+      `${tr('journal.imported', { n: r.trades.length })}${r.skipped ? ` · ${tr('journal.skipped', { n: r.skipped })}` : ''}`,
       r.trades.length ? 'ok' : 'info',
     )
   }
@@ -302,29 +315,27 @@ function PageHeader({ count }: { count: number }) {
   return (
     <motion.div variants={stagger} className="flex flex-wrap items-end justify-between gap-3">
       <div>
-        <p className="label">Journal</p>
+        <p className="label">{tr('journal.label')}</p>
         <h1 className="mt-1 text-3xl font-semibold tracking-tight">
-          Every trade, <span className="serif text-accent">honestly</span>
+          Every trade, <span className="serif text-accent">{tr('journal.titleAccent')}</span>
         </h1>
       </div>
       <div className="flex flex-wrap gap-2">
         {count > 0 && (
           <>
             <Button size="sm" icon={<FileUp />} onClick={() => fileRef.current?.click()}>
-              Import
+              {tr('common.import')}
             </Button>
             <Button size="sm" icon={<Download />} onClick={exportCsv}>
-              Export
+              {tr('common.export')}
             </Button>
             {dupes > 0 && (
               <Button
                 size="sm"
                 icon={<Merge />}
-                onClick={() =>
-                  toast(`Merged ${mergeDuplicates()} duplicate${dupes > 1 ? 's' : ''}`)
-                }
+                onClick={() => toast(tr('journal.merged', { n: mergeDuplicates() }))}
               >
-                Merge {dupes} duplicate{dupes > 1 ? 's' : ''}
+                {tn('n.duplicates', dupes)}
               </Button>
             )}
             {!actions.cloud && (
@@ -334,16 +345,16 @@ function PageHeader({ count }: { count: number }) {
                 icon={<Trash2 />}
                 onClick={() => setConfirmClear(true)}
               >
-                Clear
+                {tr('journal.clear')}
               </Button>
             )}
           </>
         )}
         <Button size="sm" icon={<Zap />} onClick={() => openTrade({ quick: true })} kbd="Q">
-          Quick log
+          {tr('journal.quickLog')}
         </Button>
         <Button size="sm" variant="primary" icon={<Plus />} onClick={() => openTrade()} kbd="N">
-          Log trade
+          {tr('nav.logTrade')}
         </Button>
       </div>
       <input
@@ -356,23 +367,23 @@ function PageHeader({ count }: { count: number }) {
       <Modal
         open={confirmClear}
         onClose={() => setConfirmClear(false)}
-        title="Clear all trades?"
-        description="This removes every trade from this browser. Export a CSV first if you want a backup."
+        title={tr('journal.clearTitle')}
+        description={tr('journal.clearBody')}
         size="sm"
       >
         <div className="flex justify-end gap-2">
           <Button variant="quiet" onClick={() => setConfirmClear(false)}>
-            Keep them
+            {tr('journal.keep')}
           </Button>
           <Button
             variant="danger"
             onClick={() => {
               clearAll()
               setConfirmClear(false)
-              toast('All trades cleared', 'info')
+              toast(tr('journal.cleared'), 'info')
             }}
           >
-            Clear all
+            {tr('journal.clearAll')}
           </Button>
         </div>
       </Modal>
@@ -386,21 +397,21 @@ export function JournalEmpty() {
   return (
     <EmptyState
       icon={<NotebookPen />}
-      title="Your journal is empty"
-      body="Log your first trade, or load 60 realistic demo trades to explore every chart and the calendar."
+      title={tr('journal.emptyTitle')}
+      body={tr('journal.emptyBody')}
       action={
         <>
           <Button variant="primary" icon={<Plus />} onClick={() => openTrade()}>
-            Log first trade
+            {tr('dash.logFirst')}
           </Button>
           <Button
             icon={<Sparkles />}
             onClick={() => {
               loadDemo()
-              toast('Loaded 60 demo trades')
+              toast(tr('dash.demoLoaded'))
             }}
           >
-            Load demo data
+            {tr('dash.loadDemo')}
           </Button>
         </>
       }
@@ -425,14 +436,14 @@ export function SourceBadges({ t }: { t: Trade }) {
       {t.source === 'mt5' && (
         <span
           className="rounded-md bg-accent/15 px-1.5 py-0.5 text-[0.6rem] font-semibold tracking-wide text-accent"
-          title="Synced from MetaTrader 5"
+          title={tr('journal.synced')}
         >
           MT5
         </span>
       )}
       {t.status === 'open' && (
         <span className="rounded-md border border-line/20 px-1.5 py-0.5 text-[0.6rem] font-semibold tracking-wide text-muted uppercase">
-          Open
+          {tr('common.open')}
         </span>
       )}
     </>
@@ -483,26 +494,26 @@ function TradeRow({ t, onOpen }: { t: Trade; onOpen: () => void }) {
           {!t.rulesFollowed && (
             <span
               className="size-1.5 rounded-full bg-neg"
-              title="Rules broken"
-              aria-label="Rules broken"
+              title={tr('journal.rulesBroken')}
+              aria-label={tr('journal.rulesBroken')}
             />
           )}
         </span>
       </td>
       <td className="hidden px-4 py-3 text-muted md:table-cell">{t.setup ?? '—'}</td>
       <td className="hidden px-4 py-3 text-muted md:table-cell">
-        {t.session ? SESSION_LABEL[t.session] : '—'}
+        {t.session ? sessionLabel(t.session) : '—'}
       </td>
       <td className="tabular hidden px-4 py-3 text-right text-muted sm:table-cell">
         {t.source === 'mt5' && t.rMultiple === null ? (
-          <span title="No stop loss, so R is unknown">R ?</span>
+          <span title={tr('journal.rUnknown')}>R ?</span>
         ) : (
           formatR(tradeR(t))
         )}
       </td>
       <td className="py-3 pr-4 pl-2 text-right whitespace-nowrap sm:px-4">
         {t.status === 'open' ? (
-          <span className="text-xs text-muted">open</span>
+          <span className="text-xs text-muted">{tr('journal.openLower')}</span>
         ) : (
           <Pnl value={t.pnl} />
         )}
@@ -519,7 +530,14 @@ function TradeList({ trades }: { trades: Trade[] }) {
       <table className="w-full text-sm">
         <thead className="hidden text-left sm:table-header-group">
           <tr className="border-b hairline">
-            {['Date', 'Symbol', 'Setup', 'Session', 'R', 'P&L'].map((h, i) => (
+            {[
+              tr('journal.colDate'),
+              tr('journal.symbol'),
+              tr('journal.setup'),
+              tr('journal.session'),
+              'R',
+              tr('journal.colPnl'),
+            ].map((h, i) => (
               <th
                 key={h}
                 scope="col"
@@ -541,7 +559,7 @@ function TradeList({ trades }: { trades: Trade[] }) {
       {trades.length > limit && (
         <div className="border-t hairline p-3 text-center">
           <Button size="sm" variant="quiet" onClick={() => setLimit((l) => l + PAGE)}>
-            Show {Math.min(PAGE, trades.length - limit)} more
+            {tr('journal.showMoreN', { n: Math.min(PAGE, trades.length - limit) })}
           </Button>
         </div>
       )}
@@ -590,13 +608,17 @@ function TradeGrid({ trades }: { trades: Trade[] }) {
                 <span className="rounded-full bg-line/8 px-2 py-0.5 text-muted">{t.setup}</span>
               )}
               {t.emotion && (
-                <span className="rounded-full bg-line/8 px-2 py-0.5 text-muted">{t.emotion}</span>
+                <span className="rounded-full bg-line/8 px-2 py-0.5 text-muted">
+                  {emotionLabel(t.emotion)}
+                </span>
               )}
               <span className="rounded-full bg-line/8 px-2 py-0.5 text-muted">
                 {formatR(tradeR(t))}
               </span>
               {!t.rulesFollowed && (
-                <span className="rounded-full bg-neg/12 px-2 py-0.5 text-neg">Rules broken</span>
+                <span className="rounded-full bg-neg/12 px-2 py-0.5 text-neg">
+                  {tr('journal.rulesBroken')}
+                </span>
               )}
             </div>
             {t.notes && <p className="mt-3 line-clamp-2 text-sm text-muted">{t.notes}</p>}
@@ -606,7 +628,7 @@ function TradeGrid({ trades }: { trades: Trade[] }) {
       {trades.length > limit && (
         <div className="text-center">
           <Button size="sm" variant="quiet" onClick={() => setLimit((l) => l + PAGE)}>
-            Show more
+            {tr('journal.showMore')}
           </Button>
         </div>
       )}
@@ -644,12 +666,16 @@ function PeriodList({ trades, period }: { trades: Trade[]; period: 'day' | 'week
               <div>
                 <p className="font-semibold">
                   {period === 'day'
-                    ? format(start, 'EEEE, d MMMM')
-                    : `${format(start, 'd MMM')} – ${format(endOfWeek(start, { weekStartsOn: 1 }), 'd MMM yyyy')}`}
+                    ? fmtDate(start, 'EEEE, d MMMM')
+                    : `${fmtDate(start, 'd MMM')} – ${fmtDate(endOfWeek(start, { weekStartsOn: 1 }), 'd MMM yyyy')}`}
                 </p>
                 <p className="text-xs text-muted">
-                  {s.count} trade{s.count === 1 ? '' : 's'} · {s.wins}W {s.losses}L · win rate{' '}
-                  {formatPercent(s.winRate, 0)}
+                  {tn('n.trades', s.count)} ·{' '}
+                  {tr('journal.periodStats', {
+                    w: s.wins,
+                    l: s.losses,
+                    wr: formatPercent(s.winRate, 0),
+                  })}
                   {period === 'week' &&
                     ` · PF ${Number.isFinite(s.profitFactor) ? s.profitFactor.toFixed(2) : '∞'}`}
                 </p>
@@ -658,7 +684,7 @@ function PeriodList({ trades, period }: { trades: Trade[]; period: 'day' | 'week
                 <Pnl value={s.totalPnl} className="text-lg" />
                 {period === 'day' && (
                   <Button size="sm" variant="quiet" onClick={() => openDay(k)}>
-                    Open day
+                    {tr('journal.openDay')}
                   </Button>
                 )}
               </div>

@@ -1,3 +1,4 @@
+import { intlLocale } from '@/i18n'
 const usd = new Intl.NumberFormat('en-US', {
   style: 'currency',
   currency: 'USD',
@@ -83,7 +84,7 @@ export function formatInZone(
   tz: string,
   style: 'datetime' | 'date' | 'time' | 'weekday-date' = 'datetime',
 ): string {
-  const key = `${tz}|${style}`
+  const key = `${intlLocale()}|${tz}|${style}`
   let f = zoneFormats.get(key)
   if (!f) {
     const base: Intl.DateTimeFormatOptions = { timeZone: tz }
@@ -110,7 +111,7 @@ export function formatInZone(
                 minute: '2-digit',
                 hourCycle: 'h23',
               }
-    f = new Intl.DateTimeFormat('en-US', opts)
+    f = new Intl.DateTimeFormat(intlLocale(), opts)
     zoneFormats.set(key, f)
   }
   return f.format(new Date(instant))

@@ -1,12 +1,13 @@
+import { dateLocale, tr, type MsgKey } from '@/i18n'
 import { formatDistanceToNowStrict } from 'date-fns'
 import { useNow } from '@/lib/useNow'
 import type { AccountRow } from '@/cloud/rows'
 import { connectionStatus, type ConnectionStatus } from '@/cloud/status'
 
-const LABEL: Record<ConnectionStatus, string> = {
-  connected: 'Connected',
-  waiting: 'Waiting',
-  offline: 'Offline',
+const LABEL: Record<ConnectionStatus, MsgKey> = {
+  connected: 'status.connected',
+  waiting: 'status.waiting',
+  offline: 'status.offline',
 }
 const DOT: Record<ConnectionStatus, string> = {
   connected: 'bg-pos shadow-[0_0_8px_var(--pos)]',
@@ -35,16 +36,19 @@ export function StatusChip({ account }: { account: AccountRow }) {
   const now = useNow()
   const status = connectionStatus(account, now)
   const seen = account.last_heartbeat_at
-    ? formatDistanceToNowStrict(new Date(account.last_heartbeat_at), { addSuffix: true })
+    ? formatDistanceToNowStrict(new Date(account.last_heartbeat_at), {
+        addSuffix: true,
+        locale: dateLocale(),
+      })
     : null
   return (
     <span
       className="inline-flex items-center gap-1.5 rounded-full border border-line/12 bg-line/5 px-2.5 py-1 text-xs font-medium"
-      title={seen ? `Last heartbeat ${seen}` : 'No heartbeat from the EA yet'}
+      title={seen ? tr('status.lastHeartbeat', { t: seen }) : tr('status.noHeartbeat')}
       role="status"
     >
       <StatusDot status={status} />
-      {LABEL[status]}
+      {tr(LABEL[status])}
       {seen && status !== 'waiting' && <span className="text-muted">· {seen}</span>}
     </span>
   )

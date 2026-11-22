@@ -1,3 +1,4 @@
+import { tr } from '@/i18n'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   Check,
@@ -50,11 +51,11 @@ export function CopyField({
               setCopied(true)
               window.setTimeout(() => setCopied(false), 1800)
             } catch {
-              toast('Select the text and copy it manually', 'info')
+              toast(tr('wiz.copyManual'), 'info')
             }
           }}
         >
-          {copied ? 'Copied' : 'Copy'}
+          {copied ? tr('common.copied') : tr('common.copy')}
         </Button>
       </div>
     </div>
@@ -97,7 +98,7 @@ function Mock({ children }: { children: ReactNode }) {
   )
 }
 
-const STEPS = ['Account', 'Sync key', 'Install', 'Connect'] as const
+const STEPS = ['wiz.account', 'wiz.key', 'wiz.install', 'wiz.connect'] as const
 
 /** Create account → issue key (shown once) → XM install steps → live wait for the first heartbeat. */
 export function ConnectWizard({
@@ -130,7 +131,7 @@ export function ConnectWizard({
       setAccountId(a.id)
       setStep(1)
     } catch (e) {
-      toast(e instanceof Error ? e.message : 'Could not create the account', 'info')
+      toast(e instanceof Error ? e.message : tr('wiz.createFailed'), 'info')
     } finally {
       setBusy(false)
     }
@@ -141,7 +142,7 @@ export function ConnectWizard({
     try {
       setKey(await createKey(accountId, 'MT5 EA', true))
     } catch (e) {
-      toast(e instanceof Error ? e.message : 'Could not create a key', 'info')
+      toast(e instanceof Error ? e.message : tr('wiz.keyFailed'), 'info')
     } finally {
       setBusy(false)
     }
@@ -149,7 +150,7 @@ export function ConnectWizard({
 
   return (
     <div className="flex flex-col gap-5">
-      <ol className="flex items-center gap-2" aria-label="Progress">
+      <ol className="flex items-center gap-2" aria-label={tr('wiz.progress')}>
         {STEPS.map((s, i) => (
           <li key={s} className="flex flex-1 items-center gap-2">
             <span
@@ -159,7 +160,7 @@ export function ConnectWizard({
               {i < step ? <Check className="size-3.5" /> : i + 1}
             </span>
             <span className={`hidden text-xs sm:inline ${i === step ? 'text-fg' : 'text-muted'}`}>
-              {s}
+              {tr(s)}
             </span>
             {i < STEPS.length - 1 && <span className="h-px flex-1 bg-line/12" />}
           </li>
@@ -177,11 +178,9 @@ export function ConnectWizard({
         >
           {step === 0 && (
             <>
-              <p className="text-sm text-muted">
-                One TradeDesk account per MT5 login. Your MT5 password is never needed.
-              </p>
+              <p className="text-sm text-muted">{tr('wiz.intro')}</p>
               <div className="grid gap-3 sm:grid-cols-3">
-                <Field label="Name">
+                <Field label={tr('wiz.name')}>
                   {(id) => (
                     <input
                       id={id}
@@ -193,7 +192,7 @@ export function ConnectWizard({
                     />
                   )}
                 </Field>
-                <Field label="Broker">
+                <Field label={tr('wiz.broker')}>
                   {(id) => (
                     <input
                       id={id}
@@ -204,7 +203,7 @@ export function ConnectWizard({
                     />
                   )}
                 </Field>
-                <Field label="Starting balance" hint="Optional. Used for return %">
+                <Field label={tr('dash.startingBalance')} hint={tr('wiz.startHint')}>
                   {(id) => (
                     <input
                       id={id}
@@ -219,7 +218,7 @@ export function ConnectWizard({
               </div>
               <div className="flex justify-end">
                 <Button variant="primary" onClick={() => void create()} disabled={busy}>
-                  {busy ? 'Creating…' : 'Create account'}
+                  {busy ? tr('wiz.creating') : tr('wiz.createAccount')}
                 </Button>
               </div>
             </>
@@ -229,11 +228,7 @@ export function ConnectWizard({
             <>
               {!key ? (
                 <>
-                  <p className="text-sm text-muted">
-                    The sync key lets the EA write to{' '}
-                    <span className="text-fg">this account only</span>. It is shown once and stored
-                    only as a hash. Creating a new key revokes the old one.
-                  </p>
+                  <p className="text-sm text-muted">{tr('wiz.keyIntro')}</p>
                   <div className="flex justify-end">
                     <Button
                       variant="primary"
@@ -241,21 +236,20 @@ export function ConnectWizard({
                       onClick={() => void issue()}
                       disabled={busy}
                     >
-                      {busy ? 'Generating…' : 'Generate sync key'}
+                      {busy ? tr('wiz.generating') : tr('wiz.generate')}
                     </Button>
                   </div>
                 </>
               ) : (
                 <>
-                  <CopyField label="Sync key (shown once)" value={key.key} />
-                  <CopyField label="API URL (paste into the EA's ApiUrl input)" value={host} />
+                  <CopyField label={tr('wiz.keyLabel')} value={key.key} />
+                  <CopyField label={tr('wiz.urlLabel')} value={host} />
                   <p className="rounded-[var(--radius-sm)] bg-accent/10 px-3 py-2 text-xs">
-                    Copy the key now. If you lose it, create a new one here; the old one stops
-                    working.
+                    {tr('wiz.copyNow')}
                   </p>
                   <div className="flex justify-end">
                     <Button variant="primary" onClick={() => setStep(2)}>
-                      I copied it
+                      {tr('wiz.copiedIt')}
                     </Button>
                   </div>
                 </>
@@ -266,20 +260,26 @@ export function ConnectWizard({
           {step === 2 && (
             <>
               <div className="grid gap-2.5">
-                <StepCard n={1} icon={<Download />} title="Install the EA">
-                  Download{' '}
-                  <a className="text-accent underline" href="/downloads/TradeDeskSync.ex5" download>
-                    TradeDeskSync.ex5
-                  </a>{' '}
-                  (or the{' '}
-                  <a className="text-accent underline" href="/downloads/TradeDeskSync.mq5" download>
-                    source
-                  </a>
-                  ). In MT5: <b className="text-fg">File → Open Data Folder → MQL5 → Experts</b>,
-                  paste it there, then right-click{' '}
-                  <b className="text-fg">Expert Advisors → Refresh</b> in the Navigator.
+                <StepCard n={1} icon={<Download />} title={tr('wiz.step1')}>
+                  {tr('wiz.step1Body')}
+                  <span className="mt-2 flex flex-wrap gap-x-3 gap-y-1">
+                    <a
+                      className="text-accent underline"
+                      href="/downloads/TradeDeskSync.ex5"
+                      download
+                    >
+                      {tr('wiz.downloadEx5')}
+                    </a>
+                    <a
+                      className="text-accent underline"
+                      href="/downloads/TradeDeskSync.mq5"
+                      download
+                    >
+                      {tr('wiz.downloadSrc')}
+                    </a>
+                  </span>
                 </StepCard>
-                <StepCard n={2} icon={<MonitorCog />} title="Allow the web address">
+                <StepCard n={2} icon={<MonitorCog />} title={tr('wiz.step2')}>
                   <b className="text-fg">Tools → Options → Expert Advisors</b>
                   <Mock>
                     [x] Allow algorithmic trading
@@ -289,13 +289,8 @@ export function ConnectWizard({
                     &nbsp;&nbsp;&nbsp;&nbsp;{host}
                   </Mock>
                 </StepCard>
-                <StepCard
-                  n={3}
-                  icon={<MousePointerClick />}
-                  title="Attach to one chart and paste the key"
-                >
-                  Drag <b className="text-fg">TradeDeskSync</b> onto any single chart →{' '}
-                  <b className="text-fg">Inputs</b>:
+                <StepCard n={3} icon={<MousePointerClick />} title={tr('wiz.step3')}>
+                  {tr('wiz.step3Body')}
                   <Mock>
                     ApiUrl = {host}
                     <br />
@@ -304,18 +299,16 @@ export function ConnectWizard({
                     HistoryDaysOnStart = 90
                   </Mock>
                 </StepCard>
-                <StepCard n={4} icon={<Power />} title="Turn on Algo Trading">
-                  The <b className="text-fg">Algo Trading</b> toolbar button must be green. The EA
-                  never trades; MT5 just needs this to run any EA. The chart corner shows
-                  “TradeDesk: connected”.
+                <StepCard n={4} icon={<Power />} title={tr('wiz.step4')}>
+                  {tr('wiz.step4Body')}
                 </StepCard>
               </div>
               <div className="flex justify-between">
                 <Button variant="quiet" onClick={() => setStep(1)}>
-                  Back
+                  {tr('common.back')}
                 </Button>
                 <Button variant="primary" onClick={() => setStep(3)}>
-                  I attached it
+                  {tr('wiz.attached')}
                 </Button>
               </div>
             </>
@@ -341,19 +334,17 @@ export function ConnectWizard({
               <StatusChip account={account} />
               {status === 'connected' ? (
                 <p className="text-sm">
-                  Connected to <b>{account.login}</b> on {account.server}. Balance{' '}
-                  <b className="tabular">{formatCurrency(Number(account.balance ?? 0))}</b>. History
-                  is syncing now; trades appear in the Journal within seconds.
+                  {tr('wiz.connectedTo', {
+                    login: String(account.login ?? ''),
+                    server: account.server ?? '',
+                    balance: formatCurrency(Number(account.balance ?? 0)),
+                  })}
                 </p>
               ) : (
-                <p className="max-w-sm text-sm text-muted">
-                  Waiting for the first heartbeat from MT5. This page updates by itself. If nothing
-                  happens within a minute, check the <b className="text-fg">Experts</b> tab in MT5.
-                  Most often the URL is missing from the WebRequest list.
-                </p>
+                <p className="max-w-sm text-sm text-muted">{tr('wiz.waitingBody')}</p>
               )}
               <Button variant={status === 'connected' ? 'primary' : 'ghost'} onClick={onDone}>
-                {status === 'connected' ? 'Done' : 'Close and keep waiting'}
+                {status === 'connected' ? tr('common.done') : tr('wiz.keepWaiting')}
               </Button>
             </div>
           )}

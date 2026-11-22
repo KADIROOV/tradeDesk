@@ -1,3 +1,4 @@
+import { tr } from '@/i18n'
 import { CloudUpload, Download, FlaskConical, Globe2 } from 'lucide-react'
 import { useMemo, useState } from 'react'
 import { Button } from '@/components/ui/Button'
@@ -70,7 +71,7 @@ export function DataTab() {
     if (!isValidTimeZone(tz)) return
     setTimezone(tz)
     if (cloud) void saveProfile({ timezone: tz }).catch(() => undefined)
-    toast(`Calendar days now follow ${tz}`)
+    toast(tr('data.tzChanged', { tz }))
   }
   const exportCsv = () => {
     const rows = cloud ? allCloud : local
@@ -84,7 +85,7 @@ export function DataTab() {
 
   return (
     <div className="flex flex-col gap-3">
-      <h3 className="text-base font-semibold tracking-tight">Data & time zone</h3>
+      <h3 className="text-base font-semibold tracking-tight">{tr('data.title')}</h3>
       <section className="rounded-[var(--radius-sm)] border border-line/10 bg-line/4 p-4">
         <div className="flex items-start gap-3">
           <span className="grid size-9 shrink-0 place-items-center rounded-xl bg-accent/12 text-accent">
@@ -92,8 +93,10 @@ export function DataTab() {
           </span>
           <div className="min-w-0 flex-1">
             <Field
-              label="My time zone"
-              hint={`Decides which calendar day a trade belongs to. Now it is ${dayKeyInZone(now, timezone)} ${now.toLocaleTimeString('en-GB', { timeZone: timezone, hour: '2-digit', minute: '2-digit' })} there. Times are stored in UTC.`}
+              label={tr('data.tz')}
+              hint={tr('data.tzHint', {
+                now: `${dayKeyInZone(now, timezone)} ${now.toLocaleTimeString('en-GB', { timeZone: timezone, hour: '2-digit', minute: '2-digit' })}`,
+              })}
             >
               {(id) => (
                 <select
@@ -116,19 +119,19 @@ export function DataTab() {
 
       <Block
         icon={<Download />}
-        title="Export CSV"
-        body={`All ${cloud ? allCloud.length : local.length} trades with prices, costs and journal fields.`}
+        title={tr('data.exportTitle')}
+        body={tr('data.exportBody', { n: cloud ? allCloud.length : local.length })}
       >
         <Button size="sm" onClick={exportCsv}>
-          Export all trades
+          {tr('data.exportBtn')}
         </Button>
       </Block>
 
       {cloud && (
         <Block
           icon={<CloudUpload />}
-          title="Import my local data"
-          body={`${local.filter((t) => !t.id.startsWith('demo-')).length} trades are stored only in this browser. Copy them (and screenshots) into your account.`}
+          title={tr('data.importTitle')}
+          body={tr('data.importBody', { n: local.filter((t) => !t.id.startsWith('demo-')).length })}
         >
           <Button
             size="sm"
@@ -139,23 +142,19 @@ export function DataTab() {
                 const n = await importLocalTrades(local.filter((t) => !t.id.startsWith('demo-')))
                 toast(`Imported ${n} trades`)
               } catch (e) {
-                toast(e instanceof Error ? e.message : 'Import failed', 'info')
+                toast(e instanceof Error ? e.message : tr('common.importFailed'), 'info')
               } finally {
                 setBusy(null)
               }
             }}
           >
-            {busy === 'import' ? 'Importing…' : 'Import'}
+            {busy === 'import' ? tr('common.importing') : tr('common.import')}
           </Button>
         </Block>
       )}
 
       {cloud && (
-        <Block
-          icon={<FlaskConical />}
-          title="Simulate MT5 trades"
-          body="Sends realistic deals through the real sync API into a separate “Simulator” account, so you can watch trades arrive live without trading. Delete that account anytime."
-        >
+        <Block icon={<FlaskConical />} title={tr('data.simTitle')} body={tr('data.simBody')}>
           <Button
             size="sm"
             disabled={busy !== null}
@@ -165,19 +164,19 @@ export function DataTab() {
               try {
                 const id = await runSimulation(6, setProgress)
                 useSettings.getState().setSelectedAccount(id)
-                toast('Simulation finished')
+                toast(tr('data.simDone'))
               } catch (e) {
-                toast(e instanceof Error ? e.message : 'Simulation failed', 'info')
+                toast(e instanceof Error ? e.message : tr('data.simFailed'), 'info')
               } finally {
                 setBusy(null)
               }
             }}
           >
-            {busy === 'sim' ? `Sending… ${progress}/6` : 'Simulate 6 trades'}
+            {busy === 'sim' ? tr('data.simSending', { n: progress }) : tr('data.simBtn')}
           </Button>
         </Block>
       )}
-      <p className="text-xs text-muted">Showing {trades.length} trades in the current view.</p>
+      <p className="text-xs text-muted">{tr('data.showing', { n: trades.length })}</p>
     </div>
   )
 }

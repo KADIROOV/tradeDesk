@@ -7,6 +7,7 @@ export type SettingsTab =
   | 'accounts'
   | 'symbols'
   | 'data'
+  | 'language'
   | 'themes'
   | 'colours'
   | 'background'

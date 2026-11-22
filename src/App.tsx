@@ -12,6 +12,7 @@ import { BackgroundLayer, CustomCursor, ThemeApplier } from '@/features/theme/Th
 import { TradeDrawer } from '@/features/journal/TradeDrawer'
 import { useSettings } from '@/store/settings'
 import { useUi, type Route } from '@/store/ui'
+import { setLanguage, tr } from '@/i18n'
 import { useProfileSync } from '@/cloud/profileSync'
 import { initCloud, useCloud } from '@/cloud/store'
 import { AuthScreen } from '@/features/auth/AuthScreen'
@@ -48,6 +49,9 @@ function PageSkeleton() {
 export default function App() {
   const route = useUi((s) => s.route)
   const animations = useSettings((s) => s.theme.animations)
+  const language = useSettings((s) => s.language)
+  // Set before children render so every tr() call in this pass uses the new language.
+  setLanguage(language)
   const cloudStatus = useCloud((s) => s.status)
   const offline = useCloud((s) => s.offline)
   useGlobalShortcuts()
@@ -86,9 +90,9 @@ export default function App() {
         href="#main"
         className="btn btn-primary sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[70]"
       >
-        Skip to content
+        {tr('nav.skip')}
       </a>
-      <div className="mx-auto w-full max-w-[1480px] px-4 sm:px-6 lg:px-8">
+      <div key={language} className="mx-auto w-full max-w-[1480px] px-4 sm:px-6 lg:px-8">
         <TopBar />
         <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_300px] xl:grid-cols-[minmax(0,1fr)_320px]">
           <main id="main" className="min-w-0">
