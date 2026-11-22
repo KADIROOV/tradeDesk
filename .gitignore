@@ -22,3 +22,15 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Secrets
+.env
+.env.*
+!.env.example
+
+# Vercel
+.vercel
+
+# MT5 build output
+mt5/*.ex5
+mt5/*.log
