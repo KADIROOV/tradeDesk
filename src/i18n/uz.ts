@@ -396,7 +396,7 @@ export const uz: Messages = {
   'acc.signInBtn': 'Kirish yoki hisob yaratish',
   'acc.title': 'MT5 hisoblari',
   'acc.subtitle':
-    'Yopilgan savdolar, balans va ekvitet TradeDeskSync maslahatchisi orqali avtomatik sinxronlanadi.',
+    'Yopilgan savdolar, balans va ekvitet MT5 hisoblaringizdan avtomatik sinxronlanadi.',
   'acc.connect': 'MT5 ni ulash',
   'acc.noneTitle': 'Hali MT5 hisobi yoʻq',
   'acc.noneBody':

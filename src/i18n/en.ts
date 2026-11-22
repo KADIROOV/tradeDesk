@@ -411,7 +411,7 @@ export const en = {
     'The site owner has not configured Supabase yet. Everything else works on this device.',
   'acc.signInBtn': 'Sign in or create account',
   'acc.title': 'MT5 accounts',
-  'acc.subtitle': 'Closed trades, balance and equity sync automatically from the TradeDeskSync EA.',
+  'acc.subtitle': 'Closed trades, balance and equity sync automatically from your MT5 accounts.',
   'acc.connect': 'Connect MT5',
   'acc.noneTitle': 'No MT5 account yet',
   'acc.noneBody':

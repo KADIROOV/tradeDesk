@@ -507,3 +507,9 @@ html[data-motion='off'] *::after {
     animation: none;
   }
 }
+
+/* Edge/IE add their own password reveal button; the app provides one. */
+input::-ms-reveal,
+input::-ms-clear {
+  display: none;
+}
