@@ -8,6 +8,7 @@ import {
   List,
   Merge,
   NotebookPen,
+  PlugZap,
   Plus,
   Search,
   Sparkles,
@@ -31,7 +32,7 @@ import { useSettings } from '@/store/settings'
 import { useTrades } from '@/store/trades'
 import { useUi } from '@/store/ui'
 import { useCloud } from '@/cloud/store'
-import { useTimezone, useTradeActions, useTradeList } from '@/data/useTradeData'
+import { useCloudActive, useTimezone, useTradeActions, useTradeList } from '@/data/useTradeData'
 import { emotionLabel, SESSION_LABEL, sessionLabel } from './constants'
 
 type Tab = 'trades' | 'daily' | 'weekly'
@@ -394,6 +395,27 @@ function PageHeader({ count }: { count: number }) {
 export function JournalEmpty() {
   const openTrade = useUi((s) => s.openTrade)
   const loadDemo = useTrades((s) => s.loadDemo)
+  const openSettings = useUi((s) => s.openSettings)
+  const cloud = useCloudActive()
+  if (cloud)
+    // Signed in: trades come from MT5 (demo data would only live on this device).
+    return (
+      <EmptyState
+        icon={<PlugZap />}
+        title={tr('dash.emptyCloudTitle')}
+        body={tr('dash.emptyCloudBody')}
+        action={
+          <>
+            <Button variant="primary" icon={<PlugZap />} onClick={() => openSettings('accounts')}>
+              {tr('dash.connectMt5')}
+            </Button>
+            <Button icon={<Plus />} onClick={() => openTrade()}>
+              {tr('dash.logManual')}
+            </Button>
+          </>
+        }
+      />
+    )
   return (
     <EmptyState
       icon={<NotebookPen />}
