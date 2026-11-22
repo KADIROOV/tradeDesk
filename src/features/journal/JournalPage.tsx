@@ -1,4 +1,4 @@
-import { endOfWeek, format, startOfWeek } from 'date-fns'
+﻿import { endOfWeek, format, startOfWeek } from 'date-fns'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   Download,
@@ -22,20 +22,22 @@ import { toast } from '@/components/ui/toastStore'
 import { stagger } from '@/components/motion'
 import { csvToTrades, tradesToCsv } from '@/lib/csv'
 import { countDuplicates } from '@/lib/dedupe'
-import { computeStats, tradeR } from '@/lib/finance/metrics'
-import { dateKey, formatCurrency, formatPercent, formatR } from '@/lib/format'
+import { computeStats, tradeDay, tradeR, tradeTime } from '@/lib/finance/metrics'
+import { dateKey, formatCurrency, formatInZone, formatPercent, formatR } from '@/lib/format'
 import type { Session, Trade } from '@/lib/types'
 import { useJournal } from '@/store/journal'
 import { useSettings } from '@/store/settings'
 import { useTrades } from '@/store/trades'
 import { useUi } from '@/store/ui'
+import { useCloud } from '@/cloud/store'
+import { useTimezone, useTradeActions, useTradeList } from '@/data/useTradeData'
 import { SESSION_LABEL } from './constants'
 
 type Tab = 'trades' | 'daily' | 'weekly'
 type Outcome = 'all' | 'win' | 'loss'
 
 export default function JournalPage() {
-  const trades = useTrades((s) => s.trades)
+  const trades = useTradeList()
   const [tab, setTab] = useState<Tab>('trades')
   const [view, setView] = useState<'list' | 'grid'>('list')
   const [q, setQ] = useState('')
@@ -264,10 +266,15 @@ function FilteredSummary({ trades, total }: { trades: Trade[]; total: number }) 
 
 function PageHeader({ count }: { count: number }) {
   const openTrade = useUi((s) => s.openTrade)
-  const { importTrades, mergeDuplicates, trades, clearAll } = useTrades()
+  const { mergeDuplicates, clearAll } = useTrades()
+  const trades = useTradeList()
+  const actions = useTradeActions()
   const fileRef = useRef<HTMLInputElement>(null)
   const [confirmClear, setConfirmClear] = useState(false)
-  const dupes = useMemo(() => countDuplicates(trades), [trades])
+  const dupes = useMemo(
+    () => (actions.cloud ? 0 : countDuplicates(trades)),
+    [trades, actions.cloud],
+  )
 
   const exportCsv = () => {
     const blob = new Blob([tradesToCsv(trades)], { type: 'text/csv' })
@@ -280,7 +287,12 @@ function PageHeader({ count }: { count: number }) {
   const importCsv = async (file?: File) => {
     if (!file) return
     const r = csvToTrades(await file.text())
-    importTrades(r.trades)
+    try {
+      await actions.importMany(r.trades)
+    } catch (e) {
+      toast(e instanceof Error ? e.message : 'Import failed', 'info')
+      return
+    }
     toast(
       `Imported ${r.trades.length} trades${r.skipped ? ` · skipped ${r.skipped}` : ''}`,
       r.trades.length ? 'ok' : 'info',
@@ -315,14 +327,16 @@ function PageHeader({ count }: { count: number }) {
                 Merge {dupes} duplicate{dupes > 1 ? 's' : ''}
               </Button>
             )}
-            <Button
-              size="sm"
-              variant="quiet"
-              icon={<Trash2 />}
-              onClick={() => setConfirmClear(true)}
-            >
-              Clear
-            </Button>
+            {!actions.cloud && (
+              <Button
+                size="sm"
+                variant="quiet"
+                icon={<Trash2 />}
+                onClick={() => setConfirmClear(true)}
+              >
+                Clear
+              </Button>
+            )}
           </>
         )}
         <Button size="sm" icon={<Zap />} onClick={() => openTrade({ quick: true })} kbd="Q">
@@ -405,6 +419,32 @@ function Pnl({ value, className = '' }: { value: number; className?: string }) {
   )
 }
 
+export function SourceBadges({ t }: { t: Trade }) {
+  return (
+    <>
+      {t.source === 'mt5' && (
+        <span
+          className="rounded-md bg-accent/15 px-1.5 py-0.5 text-[0.6rem] font-semibold tracking-wide text-accent"
+          title="Synced from MetaTrader 5"
+        >
+          MT5
+        </span>
+      )}
+      {t.status === 'open' && (
+        <span className="rounded-md border border-line/20 px-1.5 py-0.5 text-[0.6rem] font-semibold tracking-wide text-muted uppercase">
+          Open
+        </span>
+      )}
+    </>
+  )
+}
+
+/** Soft accent wash on trades that just arrived from MT5. */
+function useFresh(id: string) {
+  const at = useCloud((s) => s.fresh[id])
+  return at !== undefined && Date.now() - at < 8000
+}
+
 function SideBadge({ t }: { t: Trade }) {
   return (
     <span
@@ -416,6 +456,60 @@ function SideBadge({ t }: { t: Trade }) {
 }
 
 const PAGE = 40
+
+function TradeRow({ t, onOpen }: { t: Trade; onOpen: () => void }) {
+  const tz = useTimezone()
+  const fresh = useFresh(t.id)
+  return (
+    <motion.tr
+      layout="position"
+      initial={fresh ? { opacity: 0, y: -10 } : { opacity: 0 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0 }}
+      transition={{ type: 'spring', stiffness: 260, damping: 28 }}
+      onClick={onOpen}
+      onKeyDown={(e) => e.key === 'Enter' && onOpen()}
+      tabIndex={0}
+      className={`cursor-pointer transition-colors duration-[1500ms] hover:bg-line/5 focus-visible:bg-line/5 ${fresh ? 'bg-accent/10' : ''}`}
+    >
+      <td className="py-3 pr-2 pl-4 text-xs text-muted sm:px-4 sm:text-sm">
+        <span className="tabular whitespace-nowrap">{formatInZone(tradeTime(t), tz)}</span>
+      </td>
+      <td className="px-2 py-3 sm:px-4">
+        <span className="flex flex-wrap items-center gap-1.5">
+          <span className="font-medium">{t.symbol}</span>
+          <SideBadge t={t} />
+          <SourceBadges t={t} />
+          {!t.rulesFollowed && (
+            <span
+              className="size-1.5 rounded-full bg-neg"
+              title="Rules broken"
+              aria-label="Rules broken"
+            />
+          )}
+        </span>
+      </td>
+      <td className="hidden px-4 py-3 text-muted md:table-cell">{t.setup ?? '—'}</td>
+      <td className="hidden px-4 py-3 text-muted md:table-cell">
+        {t.session ? SESSION_LABEL[t.session] : '—'}
+      </td>
+      <td className="tabular hidden px-4 py-3 text-right text-muted sm:table-cell">
+        {t.source === 'mt5' && t.rMultiple === null ? (
+          <span title="No stop loss, so R is unknown">R ?</span>
+        ) : (
+          formatR(tradeR(t))
+        )}
+      </td>
+      <td className="py-3 pr-4 pl-2 text-right whitespace-nowrap sm:px-4">
+        {t.status === 'open' ? (
+          <span className="text-xs text-muted">open</span>
+        ) : (
+          <Pnl value={t.pnl} />
+        )}
+      </td>
+    </motion.tr>
+  )
+}
 
 function TradeList({ trades }: { trades: Trade[] }) {
   const openTrade = useUi((s) => s.openTrade)
@@ -439,46 +533,7 @@ function TradeList({ trades }: { trades: Trade[] }) {
         <tbody className="divide-hairline">
           <AnimatePresence initial={false}>
             {trades.slice(0, limit).map((t) => (
-              <motion.tr
-                key={t.id}
-                layout="position"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                onClick={() => openTrade({ editId: t.id })}
-                onKeyDown={(e) => e.key === 'Enter' && openTrade({ editId: t.id })}
-                tabIndex={0}
-                className="cursor-pointer transition-colors hover:bg-line/5 focus-visible:bg-line/5"
-              >
-                <td className="py-3 pr-2 pl-4 text-xs text-muted sm:px-4 sm:text-sm">
-                  <span className="tabular whitespace-nowrap">
-                    {format(new Date(t.openedAt), 'MMM d, HH:mm')}
-                  </span>
-                </td>
-                <td className="px-2 py-3 sm:px-4">
-                  <span className="flex items-center gap-2">
-                    <span className="font-medium">{t.symbol}</span>
-                    <SideBadge t={t} />
-                    {!t.rulesFollowed && (
-                      <span
-                        className="size-1.5 rounded-full bg-neg"
-                        title="Rules broken"
-                        aria-label="Rules broken"
-                      />
-                    )}
-                  </span>
-                </td>
-                <td className="hidden px-4 py-3 text-muted md:table-cell">{t.setup ?? '—'}</td>
-                <td className="hidden px-4 py-3 text-muted md:table-cell">
-                  {t.session ? SESSION_LABEL[t.session] : '—'}
-                </td>
-                <td className="tabular hidden px-4 py-3 text-right text-muted sm:table-cell">
-                  {formatR(tradeR(t))}
-                </td>
-                <td className="py-3 pr-4 pl-2 text-right whitespace-nowrap sm:px-4">
-                  <Pnl value={t.pnl} />
-                </td>
-              </motion.tr>
+              <TradeRow key={t.id} t={t} onOpen={() => openTrade({ editId: t.id })} />
             ))}
           </AnimatePresence>
         </tbody>
@@ -496,6 +551,7 @@ function TradeList({ trades }: { trades: Trade[] }) {
 
 function TradeGrid({ trades }: { trades: Trade[] }) {
   const openTrade = useUi((s) => s.openTrade)
+  const tz = useTimezone()
   const [limit, setLimit] = useState(PAGE)
   return (
     <>
@@ -521,9 +577,10 @@ function TradeGrid({ trades }: { trades: Trade[] }) {
                 <div className="flex items-center gap-2">
                   <span className="font-semibold">{t.symbol}</span>
                   <SideBadge t={t} />
+                  <SourceBadges t={t} />
                 </div>
                 <p className="mt-0.5 text-xs text-muted">
-                  {format(new Date(t.openedAt), 'EEE d MMM, HH:mm')}
+                  {formatInZone(tradeTime(t), tz, 'weekday-date')}
                 </p>
               </div>
               <Pnl value={t.pnl} className="text-base" />
@@ -560,15 +617,20 @@ function TradeGrid({ trades }: { trades: Trade[] }) {
 function PeriodList({ trades, period }: { trades: Trade[]; period: 'day' | 'week' }) {
   const days = useJournal((s) => s.days)
   const openDay = useUi((s) => s.openCalendarDay)
+  const tz = useTimezone()
   const groups = useMemo(() => {
     const map = new Map<string, Trade[]>()
     for (const t of trades) {
-      const d = new Date(t.openedAt)
-      const k = period === 'day' ? dateKey(d) : dateKey(startOfWeek(d, { weekStartsOn: 1 }))
+      if (t.status === 'open') continue
+      const day = tradeDay(t, tz)
+      const k =
+        period === 'day'
+          ? day
+          : dateKey(startOfWeek(new Date(`${day}T00:00:00`), { weekStartsOn: 1 }))
       map.set(k, [...(map.get(k) ?? []), t])
     }
     return [...map.entries()].sort((a, b) => b[0].localeCompare(a[0]))
-  }, [trades, period])
+  }, [trades, period, tz])
 
   return (
     <motion.div variants={stagger} initial="hidden" animate="show" className="flex flex-col gap-3">

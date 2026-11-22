@@ -6,6 +6,9 @@ import { APP_CONFIG } from '@/config'
 import { useSettings } from '@/store/settings'
 import { useUi } from '@/store/ui'
 import { NAV } from './navItems'
+import { cloudEnabled } from '@/cloud/client'
+import { chooseOffline, useCloud } from '@/cloud/store'
+import { AccountSwitcher } from '@/features/accounts/AccountSwitcher'
 
 export function Logo() {
   return (
@@ -50,6 +53,7 @@ export function TopBar() {
   const setMobileSidebar = useUi((s) => s.setMobileSidebar)
   const hidden = useSettings((s) => s.hideBalances)
   const toggleHidden = useSettings((s) => s.toggleHideBalances)
+  const cloudActive = useCloud((s) => s.status === 'signed-in')
 
   return (
     <header className="sticky top-0 z-30 -mx-4 mb-5 px-4 pt-4 pb-2 sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
@@ -99,6 +103,16 @@ export function TopBar() {
           })}
         </nav>
         <div className="flex items-center gap-1.5">
+          {cloudActive && <AccountSwitcher />}
+          {cloudEnabled && !cloudActive && (
+            <Button
+              variant="ghost"
+              onClick={() => chooseOffline(false)}
+              className="hidden sm:inline-flex"
+            >
+              Sign in
+            </Button>
+          )}
           <IconButton
             label={hidden ? 'Show balances (H)' : 'Hide balances (H)'}
             onClick={toggleHidden}

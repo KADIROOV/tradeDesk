@@ -1,6 +1,6 @@
-import { addDays, format, isSameDay, startOfWeek } from 'date-fns'
+﻿import { addDays, format, isSameDay, startOfWeek } from 'date-fns'
 import { motion } from 'framer-motion'
-import { Eye, EyeOff, Flame, Plus, Snowflake, Sparkles } from 'lucide-react'
+import { Eye, EyeOff, Flame, PlugZap, Plus, Snowflake, Sparkles } from 'lucide-react'
 import { useCallback, useMemo, type ReactNode } from 'react'
 import {
   Area,
@@ -24,15 +24,28 @@ import { useThemeColors } from '@/features/theme/useThemeColors'
 import { useSettings } from '@/store/settings'
 import { useTrades } from '@/store/trades'
 import { useUi } from '@/store/ui'
+import { dayKeyInZone } from '@/lib/mt5/tz'
+import type { Trade } from '@/lib/types'
+import {
+  useAccountSummary,
+  useCloudActive,
+  useSelectedAccounts,
+  useTimezone,
+  useTradeList,
+} from '@/data/useTradeData'
 
 export default function DashboardPage() {
-  const trades = useTrades((s) => s.trades)
-  const startingBalance = useSettings((s) => s.startingBalance)
-  const stats = useMemo(() => computeStats(trades, startingBalance), [trades, startingBalance])
+  const trades = useTradeList()
+  const summary = useAccountSummary(trades)
+  const stats = useMemo(
+    () => computeStats(trades, summary.startingBalance ?? 0),
+    [trades, summary.startingBalance],
+  )
+  const open = trades.filter((t) => t.status === 'open').length
 
   return (
     <motion.div variants={stagger} initial="hidden" animate="show" className="flex flex-col gap-4">
-      <Hero total={stats.totalPnl} count={stats.count} />
+      <Hero total={stats.totalPnl} count={stats.count} open={open} trades={trades} />
       {trades.length === 0 ? (
         <Card>
           <DashboardEmpty />
@@ -77,8 +90,8 @@ export default function DashboardPage() {
             />
           </div>
           <div className="grid gap-4 2xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-            <EquityCard />
-            <WeekCard />
+            <EquityCard trades={trades} />
+            <WeekCard trades={trades} />
           </div>
         </>
       )}
@@ -86,15 +99,27 @@ export default function DashboardPage() {
   )
 }
 
-function Hero({ total, count }: { total: number; count: number }) {
+function Hero({
+  total,
+  count,
+  open,
+  trades,
+}: {
+  total: number
+  count: number
+  open: number
+  trades: Trade[]
+}) {
   const hidden = useSettings((s) => s.hideBalances)
   const toggle = useSettings((s) => s.toggleHideBalances)
-  const start = useSettings((s) => s.startingBalance)
   const setStart = useSettings((s) => s.setStartingBalance)
+  const summary = useAccountSummary(trades)
+  const accounts = useSelectedAccounts()
   const fmt = useCallback((v: number) => formatCurrency(v, { hidden, signed: true }), [hidden])
   const balanceFmt = useCallback((v: number) => formatCurrency(v, { hidden }), [hidden])
   const hour = new Date().getHours()
   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening'
+  const floating = summary.equity === null ? null : summary.equity - summary.balance
   return (
     <Card className="overflow-hidden">
       <div
@@ -121,31 +146,63 @@ function Hero({ total, count }: { total: number; count: number }) {
             <CountUp value={total} format={fmt} />
           </p>
           <p className="mt-3 text-sm text-muted">
-            {count} trades ·{' '}
-            {start > 0 && !hidden
-              ? `${formatPercent(total / start, 2)} on starting balance`
+            {count} closed trades
+            {open > 0 && ` · ${open} open`}
+            {' · '}
+            {summary.returnPct !== null && !hidden
+              ? `${formatPercent(summary.returnPct, 2)} return${summary.live ? ' (deposits excluded)' : ' on starting balance'}`
               : 'Net of fees'}
           </p>
         </div>
-        <div className="flex flex-col items-start gap-1 sm:items-end">
-          <p className="label">Account balance</p>
-          <p className="tabular text-2xl font-semibold tracking-tight">
-            <CountUp value={start + total} format={balanceFmt} />
-          </p>
-          <label className="flex items-center gap-2 text-xs text-muted">
-            Starting
-            <input
-              type="number"
-              min={0}
-              className="field h-7 w-28 text-xs"
-              value={hidden ? '' : start}
-              placeholder={hidden ? '••••' : ''}
-              disabled={hidden}
-              onChange={(e) => setStart(Math.max(0, Number(e.target.value) || 0))}
-              aria-label="Starting balance"
-            />
-          </label>
-        </div>
+        {summary.live ? (
+          <div className="flex flex-wrap items-end gap-6 sm:flex-col sm:items-end sm:gap-1">
+            <div className="sm:text-right">
+              <p className="label">Balance</p>
+              <p className="tabular text-2xl font-semibold tracking-tight">
+                <CountUp value={summary.balance} format={balanceFmt} />
+              </p>
+            </div>
+            {summary.equity !== null && (
+              <div className="sm:text-right">
+                <p className="label">Equity</p>
+                <p className="tabular text-lg font-medium tracking-tight">
+                  <CountUp value={summary.equity} format={balanceFmt} />
+                  {floating !== null && Math.abs(floating) >= 0.01 && (
+                    <span className={`ml-2 text-xs ${floating > 0 ? 'text-pos' : 'text-neg'}`}>
+                      {formatCurrency(floating, { hidden, signed: true })} open
+                    </span>
+                  )}
+                </p>
+              </div>
+            )}
+            <p className="flex items-center gap-1.5 text-xs text-muted">
+              <span className="rounded bg-accent/15 px-1.5 py-px text-[0.6rem] font-semibold tracking-wide text-accent">
+                MT5
+              </span>
+              {accounts.length === 1 ? accounts[0].name : `${accounts.length} accounts`}
+            </p>
+          </div>
+        ) : (
+          <div className="flex flex-col items-start gap-1 sm:items-end">
+            <p className="label">Account balance</p>
+            <p className="tabular text-2xl font-semibold tracking-tight">
+              <CountUp value={summary.balance} format={balanceFmt} />
+            </p>
+            <label className="flex items-center gap-2 text-xs text-muted">
+              Starting
+              <input
+                type="number"
+                min={0}
+                className="field h-7 w-28 text-xs"
+                value={hidden ? '' : (summary.startingBalance ?? 0)}
+                placeholder={hidden ? '••••' : ''}
+                disabled={hidden}
+                onChange={(e) => setStart(Math.max(0, Number(e.target.value) || 0))}
+                aria-label="Starting balance"
+              />
+            </label>
+          </div>
+        )}
       </div>
     </Card>
   )
@@ -153,27 +210,44 @@ function Hero({ total, count }: { total: number; count: number }) {
 
 function DashboardEmpty() {
   const openTrade = useUi((s) => s.openTrade)
+  const openSettings = useUi((s) => s.openSettings)
   const loadDemo = useTrades((s) => s.loadDemo)
+  const cloud = useCloudActive()
   return (
     <EmptyState
-      icon={<Sparkles />}
-      title="Your dashboard comes alive with trades"
-      body="Win rate, profit factor, expectancy, drawdown and your equity curve are calculated from your journal. Log a trade or explore with demo data."
+      icon={cloud ? <PlugZap /> : <Sparkles />}
+      title={cloud ? 'Connect MT5 and just trade' : 'Your dashboard comes alive with trades'}
+      body={
+        cloud
+          ? 'Attach the TradeDeskSync EA to your XM terminal. Every closed trade, your balance and daily P&L then appear here within seconds.'
+          : 'Win rate, profit factor, expectancy, drawdown and your equity curve are calculated from your journal. Log a trade or explore with demo data.'
+      }
       action={
-        <>
-          <Button variant="primary" icon={<Plus />} onClick={() => openTrade()}>
-            Log first trade
-          </Button>
-          <Button
-            icon={<Sparkles />}
-            onClick={() => {
-              loadDemo()
-              toast('Loaded 60 demo trades')
-            }}
-          >
-            Load demo data
-          </Button>
-        </>
+        cloud ? (
+          <>
+            <Button variant="primary" icon={<PlugZap />} onClick={() => openSettings('accounts')}>
+              Connect MT5
+            </Button>
+            <Button icon={<Plus />} onClick={() => openTrade()}>
+              Log a manual trade
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button variant="primary" icon={<Plus />} onClick={() => openTrade()}>
+              Log first trade
+            </Button>
+            <Button
+              icon={<Sparkles />}
+              onClick={() => {
+                loadDemo()
+                toast('Loaded 60 demo trades')
+              }}
+            >
+              Load demo data
+            </Button>
+          </>
+        )
       }
     />
   )
@@ -396,8 +470,7 @@ function EquityTooltip({ active, payload }: TipProps) {
   )
 }
 
-function EquityCard() {
-  const trades = useTrades((s) => s.trades)
+function EquityCard({ trades }: { trades: Trade[] }) {
   const hidden = useSettings((s) => s.hideBalances)
   const c = useThemeColors()
   const data = useMemo(
@@ -473,11 +546,13 @@ function EquityCard() {
   )
 }
 
-function WeekCard() {
-  const trades = useTrades((s) => s.trades)
+function WeekCard({ trades }: { trades: Trade[] }) {
+  const tz = useTimezone()
   const hidden = useSettings((s) => s.hideBalances)
-  const summaries = useMemo(() => dailySummaries(trades), [trades])
-  const start = startOfWeek(new Date(), { weekStartsOn: 1 })
+  const summaries = useMemo(() => dailySummaries(trades, tz), [trades, tz])
+  // 'Today' in the user's time zone, as a local Date for the week grid.
+  const today = new Date(`${dayKeyInZone(new Date(), tz)}T00:00:00`)
+  const start = startOfWeek(today, { weekStartsOn: 1 })
   const days = Array.from({ length: 5 }, (_, i) => {
     const d = addDays(start, i)
     return { d, s: summaries.get(dateKey(d)) }
@@ -524,7 +599,7 @@ function WeekCard() {
                 )}
               </div>
               <span
-                className={`mt-1 text-xs ${isSameDay(d, new Date()) ? 'font-semibold text-accent' : 'text-muted'}`}
+                className={`mt-1 text-xs ${isSameDay(d, today) ? 'font-semibold text-accent' : 'text-muted'}`}
               >
                 {format(d, 'EEE')}
               </span>

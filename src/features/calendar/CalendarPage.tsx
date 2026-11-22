@@ -5,7 +5,6 @@ import {
   endOfWeek,
   format,
   isSameMonth,
-  isToday,
   startOfMonth,
   startOfWeek,
 } from 'date-fns'
@@ -28,11 +27,14 @@ import { Card } from '@/components/ui/Card'
 import { EmptyState, Segmented } from '@/components/ui/controls'
 import { Drawer } from '@/components/ui/Drawer'
 import { stagger } from '@/components/motion'
-import { computeStats, dailySummaries, tradeR } from '@/lib/finance/metrics'
-import { dateKey, formatCurrency, formatPercent, formatR } from '@/lib/format'
+import { computeStats, dailySummaries, tradeDay, tradeR, tradeTime } from '@/lib/finance/metrics'
+import { dateKey, formatCurrency, formatInZone, formatPercent, formatR } from '@/lib/format'
 import { getDay, useJournal, type Mood } from '@/store/journal'
 import { useSettings } from '@/store/settings'
-import { useTrades } from '@/store/trades'
+import { useCloud } from '@/cloud/store'
+import { useSelectedAccounts, useTimezone, useTradeList } from '@/data/useTradeData'
+import { dailyClosingBalances } from '@/lib/mt5/balance'
+import { dayKeyInZone } from '@/lib/mt5/tz'
 import { useUi } from '@/store/ui'
 import { EditableChecklist } from '@/features/sidebar/Sidebar'
 import { JournalEmpty } from '@/features/journal/JournalPage'
@@ -47,13 +49,16 @@ function shortAmount(v: number): string {
 }
 
 export default function CalendarPage() {
-  const trades = useTrades((s) => s.trades)
+  const trades = useTradeList()
+  const tz = useTimezone()
+  // Today's date in the user's zone, as a local Date for the month grid.
+  const todayKey = dayKeyInZone(new Date(), tz)
   const hidden = useSettings((s) => s.hideBalances)
   const days = useJournal((s) => s.days)
   const focusDay = useUi((s) => s.calendarDay)
   const clearFocus = useUi((s) => s.openCalendarDay)
   const [month, setMonth] = useState(() =>
-    startOfMonth(focusDay ? new Date(`${focusDay}T00:00:00`) : new Date()),
+    startOfMonth(new Date(`${focusDay ?? dayKeyInZone(new Date(), tz)}T00:00:00`)),
   )
   const [dir, setDir] = useState(0)
   const [selected, setSelected] = useState<string | null>(focusDay)
@@ -62,7 +67,7 @@ export default function CalendarPage() {
     if (focusDay) clearFocus(null)
   }, [focusDay, clearFocus])
 
-  const summaries = useMemo(() => dailySummaries(trades), [trades])
+  const summaries = useMemo(() => dailySummaries(trades, tz), [trades, tz])
   const weeks = useMemo(() => {
     const start = startOfWeek(startOfMonth(month), { weekStartsOn: 1 })
     const end = endOfWeek(endOfMonth(month), { weekStartsOn: 1 })
@@ -148,7 +153,7 @@ export default function CalendarPage() {
           </IconButton>
           <Button
             onClick={() => {
-              const now = startOfMonth(new Date())
+              const now = startOfMonth(new Date(`${todayKey}T00:00:00`))
               setDir(now > month ? 1 : -1)
               setMonth(now)
             }}
@@ -249,7 +254,7 @@ export default function CalendarPage() {
                               aria-label={`${format(d, 'EEEE d MMMM')}${s ? `, ${s.count} trades, ${formatCurrency(s.pnl, { hidden, signed: true })}` : ', no trades'}`}
                               className={`group relative flex aspect-square flex-col rounded-[calc(var(--radius-sm)-2px)] border p-1 text-left transition-transform active:scale-95 sm:aspect-[5/4] sm:p-2 ${
                                 inMonth ? 'border-line/8' : 'border-transparent opacity-35'
-                              } ${isToday(d) ? 'ring-1 ring-accent' : ''} hover:border-line/25`}
+                              } ${dateKey(d) === todayKey ? 'ring-1 ring-accent' : ''} hover:border-line/25`}
                               style={{
                                 background:
                                   s && inMonth
@@ -258,7 +263,7 @@ export default function CalendarPage() {
                               }}
                             >
                               <span
-                                className={`tabular text-[0.7rem] font-medium sm:text-xs ${isToday(d) ? 'text-accent' : 'text-muted'}`}
+                                className={`tabular text-[0.7rem] font-medium sm:text-xs ${dateKey(d) === todayKey ? 'text-accent' : 'text-muted'}`}
                               >
                                 {format(d, 'd')}
                               </span>
@@ -372,7 +377,28 @@ function DayPanel({ day, onClose }: { day: string | null; onClose: () => void })
 }
 
 function DayContent({ day }: { day: string }) {
-  const trades = useTrades((s) => s.trades)
+  const trades = useTradeList()
+  const tz = useTimezone()
+  const accounts = useSelectedAccounts()
+  const cash = useCloud((s) => s.cash)
+  // Balance at the close of this day, for a single synced account.
+  const closeBalance = useMemo(() => {
+    if (accounts.length !== 1 || accounts[0].balance === null) return null
+    const a = accounts[0]
+    const deals = cash
+      .filter((c) => c.account_id === a.id)
+      .map((c) => ({
+        time: Date.parse(c.deal_time) / 1000,
+        type: c.deal_type,
+        profit: c.profit,
+        commission: c.commission,
+        swap: c.swap,
+        fee: c.fee,
+      }))
+    const map = dailyClosingBalances(deals, Number(a.balance), tz)
+    const days = [...map.keys()].filter((k) => k <= day).sort()
+    return days.length ? (map.get(days[days.length - 1]) ?? null) : null
+  }, [accounts, cash, tz, day])
   const hidden = useSettings((s) => s.hideBalances)
   const openTrade = useUi((s) => s.openTrade)
   const { days, setDay, rules, toggleRule } = useJournal()
@@ -381,9 +407,9 @@ function DayContent({ day }: { day: string }) {
   const list = useMemo(
     () =>
       trades
-        .filter((t) => dateKey(t.openedAt) === day)
-        .sort((a, b) => a.openedAt.localeCompare(b.openedAt)),
-    [trades, day],
+        .filter((t) => t.status !== 'open' && tradeDay(t, tz) === day)
+        .sort((a, b) => tradeTime(a).localeCompare(tradeTime(b))),
+    [trades, day, tz],
   )
   const s = computeStats(list)
   const kept = rules.filter((r) => entry.rules[r.id]).length
@@ -392,7 +418,14 @@ function DayContent({ day }: { day: string }) {
     <div className="flex flex-col gap-6">
       <section>
         <div className="mb-2 flex items-center justify-between">
-          <h3 className="label">Trades</h3>
+          <h3 className="label">
+            Trades
+            {closeBalance !== null && (
+              <span className="ml-2 font-normal tracking-normal normal-case">
+                balance at close {formatCurrency(closeBalance, { hidden })}
+              </span>
+            )}
+          </h3>
           {list.length > 0 && (
             <span
               className={`tabular text-sm font-semibold ${s.totalPnl >= 0 ? 'text-pos' : 'text-neg'}`}
@@ -426,7 +459,7 @@ function DayContent({ day }: { day: string }) {
                       </span>
                     </span>
                     <span className="truncate text-xs text-muted">
-                      {format(new Date(t.openedAt), 'HH:mm')} · {t.setup ?? 'No setup'} ·{' '}
+                      {formatInZone(tradeTime(t), tz, 'time')} · {t.setup ?? 'No setup'} ·{' '}
                       {formatR(tradeR(t))}
                     </span>
                   </span>

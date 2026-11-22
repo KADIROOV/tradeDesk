@@ -19,7 +19,11 @@ import {
   UserRound,
   Image as ImageIcon,
 } from 'lucide-react'
-import { useRef, useState, type ReactNode } from 'react'
+import { Fragment, useRef, useState, type ReactNode } from 'react'
+import { Database, PlugZap, Tags } from 'lucide-react'
+import { AccountsTab } from '@/features/accounts/AccountsTab'
+import { DataTab } from '@/features/accounts/DataTab'
+import { SymbolsTab } from '@/features/accounts/SymbolsTab'
 import { Button, IconButton } from '@/components/ui/Button'
 import { Modal } from '@/components/ui/Modal'
 import { Segmented, Slider, Toggle } from '@/components/ui/controls'
@@ -34,8 +38,11 @@ import { exportThemeJson, GLASS_PRESETS, resolveTheme } from './engine'
 import { ACCENT_SWATCHES, getPreset, THEME_PRESETS, type ThemePreset } from './presets'
 import { prefersReducedMotion } from './applyTheme'
 
-const TABS: { id: SettingsTab; label: string; icon: ReactNode }[] = [
-  { id: 'themes', label: 'Themes', icon: <Palette /> },
+const TABS: { id: SettingsTab; label: string; icon: ReactNode; group?: string }[] = [
+  { id: 'accounts', label: 'Accounts', icon: <PlugZap />, group: 'Sync' },
+  { id: 'symbols', label: 'Symbols', icon: <Tags /> },
+  { id: 'data', label: 'Data & time', icon: <Database /> },
+  { id: 'themes', group: 'Appearance', label: 'Themes', icon: <Palette /> },
   { id: 'colours', label: 'Colours', icon: <CircleDot /> },
   { id: 'background', label: 'Background', icon: <ImageIcon /> },
   { id: 'glass', label: 'Glass', icon: <Layers /> },
@@ -51,38 +58,40 @@ export function SettingsModal() {
   const tab = useUi((s) => s.settingsTab)
   const setTab = useUi((s) => s.setSettingsTab)
   return (
-    <Modal open={open} onClose={close} title="Appearance" size="xl" bare>
+    <Modal open={open} onClose={close} title="Settings" size="xl" bare>
       <div className="flex min-h-0 flex-1 flex-col md:h-[min(720px,88dvh)] md:flex-row">
         <nav
           aria-label="Settings sections"
-          className="no-scrollbar flex shrink-0 gap-1 overflow-x-auto border-b hairline p-3 md:w-56 md:flex-col md:overflow-visible md:border-r md:border-b-0 md:p-4"
+          className="no-scrollbar flex shrink-0 gap-1 overflow-x-auto border-b hairline p-3 md:w-56 md:flex-col md:overflow-y-auto md:overflow-x-visible md:border-r md:border-b-0 md:p-4"
         >
           <div className="hidden px-2 pt-1 pb-4 md:block">
-            <p className="text-lg font-semibold tracking-tight">Appearance</p>
+            <p className="text-lg font-semibold tracking-tight">Settings</p>
             <p className="text-xs text-muted">Changes apply instantly.</p>
           </div>
           {TABS.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              onClick={() => setTab(t.id)}
-              aria-current={tab === t.id ? 'page' : undefined}
-              className={`relative flex shrink-0 items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm font-medium transition-colors [&_svg]:size-4 ${
-                tab === t.id ? 'text-fg' : 'text-muted hover:text-fg'
-              }`}
-            >
-              {tab === t.id && (
-                <motion.span
-                  layoutId="settings-tab"
-                  className="absolute inset-0 rounded-[inherit] bg-line/10"
-                  transition={spring}
-                />
-              )}
-              <span className="relative flex items-center gap-2.5">
-                {t.icon}
-                {t.label}
-              </span>
-            </button>
+            <Fragment key={t.id}>
+              {t.group && <p className="label hidden px-3 pt-3 pb-1 md:block">{t.group}</p>}
+              <button
+                type="button"
+                onClick={() => setTab(t.id)}
+                aria-current={tab === t.id ? 'page' : undefined}
+                className={`relative flex shrink-0 items-center gap-2.5 rounded-[var(--radius-sm)] px-3 py-2 text-sm font-medium transition-colors [&_svg]:size-4 ${
+                  tab === t.id ? 'text-fg' : 'text-muted hover:text-fg'
+                }`}
+              >
+                {tab === t.id && (
+                  <motion.span
+                    layoutId="settings-tab"
+                    className="absolute inset-0 rounded-[inherit] bg-line/10"
+                    transition={spring}
+                  />
+                )}
+                <span className="relative flex items-center gap-2.5">
+                  {t.icon}
+                  {t.label}
+                </span>
+              </button>
+            </Fragment>
           ))}
         </nav>
         <div className="relative min-h-0 flex-1 overflow-y-auto">
@@ -106,6 +115,9 @@ export function SettingsModal() {
             {tab === 'buttons' && <ButtonsTab />}
             {tab === 'type' && <TypeTab />}
             {tab === 'profiles' && <ProfilesTab />}
+            {tab === 'accounts' && <AccountsTab />}
+            {tab === 'symbols' && <SymbolsTab />}
+            {tab === 'data' && <DataTab />}
           </motion.div>
         </div>
       </div>

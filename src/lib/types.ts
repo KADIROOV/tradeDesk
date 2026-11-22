@@ -24,7 +24,27 @@ export interface Trade {
   screenshotId?: string
   notes?: string
   rulesFollowed: boolean
+
+  // ---- Cloud / MT5 fields (absent for trades kept only on this device) ----
+  /** 'mt5' trades are synced from MetaTrader: numbers are read-only. */
+  source?: TradeSource
+  accountId?: string | null
+  /** Close time (ISO). Calendar days and stats use this when present. */
+  closedAt?: string
+  status?: 'open' | 'closed'
+  /** Server-computed R for MT5 trades; null means "R unknown" (no stop loss). */
+  rMultiple?: number | null
+  historyComplete?: boolean
+  commission?: number
+  swap?: number
+  rating?: number
+  /** Screenshot references: IndexedDB ids locally, storage paths ("sb:<path>") in the cloud. */
+  screenshots?: string[]
+  symbolRaw?: string
+  group?: string
 }
+
+export type TradeSource = 'mt5' | 'manual' | 'csv'
 
 export type InstrumentCategory = 'metal' | 'index' | 'crypto' | 'fx-major' | 'fx-minor'
 

@@ -1,14 +1,27 @@
 import type { Trade } from '@/lib/types'
 import { dateKey } from '@/lib/format'
+import { dayKeyInZone } from '@/lib/mt5/tz'
 import { rMultiple } from './position'
 
+/** R multiple: the server's value for MT5 trades (null = no stop, unknown), else from prices. */
 export function tradeR(t: Trade): number | undefined {
+  if (t.rMultiple !== undefined) return t.rMultiple ?? undefined
   if (t.entry === undefined || t.stop === undefined || t.exit === undefined) return undefined
   return rMultiple(t.direction, t.entry, t.stop, t.exit)
 }
 
+/** When a trade's result happened: close time for synced trades, otherwise the logged time. */
+export const tradeTime = (t: Trade): string => t.closedAt ?? t.openedAt
+
+export const isClosed = (t: Trade) => t.status !== 'open'
+
+/** Calendar day of a trade, in `tz` when given (else the browser's local day). */
+export function tradeDay(t: Trade, tz?: string): string {
+  return tz ? dayKeyInZone(tradeTime(t), tz) : dateKey(tradeTime(t))
+}
+
 export function sortByTime(trades: Trade[]): Trade[] {
-  return [...trades].sort((a, b) => a.openedAt.localeCompare(b.openedAt))
+  return [...trades].sort((a, b) => tradeTime(a).localeCompare(tradeTime(b)))
 }
 
 export interface TradeStats {
@@ -34,7 +47,7 @@ export interface TradeStats {
 }
 
 export function computeStats(trades: Trade[], startingBalance = 0): TradeStats {
-  const sorted = sortByTime(trades)
+  const sorted = sortByTime(trades.filter(isClosed))
   let wins = 0
   let losses = 0
   let breakeven = 0
@@ -135,9 +148,9 @@ export interface EquityPoint {
 
 export function equityCurve(trades: Trade[]): EquityPoint[] {
   let equity = 0
-  return sortByTime(trades).map((t, i) => {
+  return sortByTime(trades.filter(isClosed)).map((t, i) => {
     equity += t.pnl
-    return { index: i + 1, date: t.openedAt, equity, pnl: t.pnl }
+    return { index: i + 1, date: tradeTime(t), equity, pnl: t.pnl }
   })
 }
 
@@ -149,10 +162,11 @@ export interface DaySummary {
   losses: number
 }
 
-export function dailySummaries(trades: Trade[]): Map<string, DaySummary> {
+export function dailySummaries(trades: Trade[], tz?: string): Map<string, DaySummary> {
   const map = new Map<string, DaySummary>()
   for (const t of trades) {
-    const k = dateKey(t.openedAt)
+    if (!isClosed(t)) continue
+    const k = tradeDay(t, tz)
     const d = map.get(k) ?? { date: k, pnl: 0, count: 0, wins: 0, losses: 0 }
     d.pnl += t.pnl
     d.count++

@@ -4,6 +4,7 @@ import { APP_CONFIG } from '@/config'
 import { DEFAULT_SYMBOL_SPECS } from '@/data/symbolSpecs'
 import { uid } from '@/lib/format'
 import type { SymbolSpec } from '@/lib/types'
+import { DEFAULT_TIMEZONE, isValidTimeZone } from '@/lib/mt5/tz'
 import {
   applyPreset,
   defaultBackground,
@@ -25,6 +26,12 @@ interface SettingsState {
   hideBalances: boolean
   startingBalance: number
   symbolSpecs: SymbolSpec[]
+  /** IANA zone used to decide which calendar day a trade belongs to. */
+  timezone: string
+  /** 'all', 'manual' (trades logged by hand) or an MT5 account id. */
+  selectedAccount: string
+  setTimezone: (tz: string) => void
+  setSelectedAccount: (id: string) => void
   setTheme: (patch: Partial<ThemeSettings>) => void
   setBackground: (patch: Partial<BackgroundSettings>) => void
   setGlass: (patch: Partial<GlassSettings>) => void
@@ -52,6 +59,11 @@ export const useSettings = create<SettingsState>()(
       hideBalances: false,
       startingBalance: 10000,
       symbolSpecs: DEFAULT_SYMBOL_SPECS,
+      timezone: DEFAULT_TIMEZONE,
+      selectedAccount: 'all',
+      setTimezone: (timezone) =>
+        set({ timezone: isValidTimeZone(timezone) ? timezone : DEFAULT_TIMEZONE }),
+      setSelectedAccount: (selectedAccount) => set({ selectedAccount }),
       setTheme: (patch) => set((s) => ({ theme: { ...s.theme, ...patch } })),
       setBackground: (patch) =>
         set((s) => ({ theme: { ...s.theme, background: { ...s.theme.background, ...patch } } })),

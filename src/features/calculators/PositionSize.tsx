@@ -1,11 +1,11 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { Card } from '@/components/ui/Card'
 import { Segmented } from '@/components/ui/controls'
 import { positionSize, tradePnl } from '@/lib/finance/position'
 import { formatCurrency, formatFixed, formatNumber, parseNum } from '@/lib/format'
 import type { Direction } from '@/lib/types'
 import { useSettings } from '@/store/settings'
-import { useTrades } from '@/store/trades'
+import { useAccountSummary, useTradeList } from '@/data/useTradeData'
 import { ConversionField, NumField, Output, SymbolSelect } from './shared'
 import { unitName } from './units'
 
@@ -22,11 +22,10 @@ const fxExample = { entry: '1.08500', stop: '1.08300', tp: '1.09000' }
 
 export function PositionSizeCalc() {
   const specs = useSettings((s) => s.symbolSpecs)
-  const start = useSettings((s) => s.startingBalance)
-  const pnl = useTrades((s) => s.trades.reduce((a, t) => a + t.pnl, 0))
+  const summary = useAccountSummary(useTradeList())
   const [symbol, setSymbol] = useState('XAUUSD')
   const spec = specs.find((s) => s.symbol === symbol) ?? specs[0]
-  const [balance, setBalance] = useState(String(Math.round((start + pnl) * 100) / 100))
+  const [balance, setBalance] = useState(String(Math.round(summary.balance * 100) / 100))
   const [mode, setMode] = useState<'percent' | 'amount'>('percent')
   const [risk, setRisk] = useState('1')
   const ex = EXAMPLES[symbol] ?? fxExample

@@ -74,3 +74,44 @@ export function parseNum(s: string): number | undefined {
   const n = Number(s.replace(/,/g, ''))
   return Number.isFinite(n) ? n : undefined
 }
+
+const zoneFormats = new Map<string, Intl.DateTimeFormat>()
+
+/** Format an instant in a specific IANA time zone (e.g. trade times in the user's zone). */
+export function formatInZone(
+  instant: string | number | Date,
+  tz: string,
+  style: 'datetime' | 'date' | 'time' | 'weekday-date' = 'datetime',
+): string {
+  const key = `${tz}|${style}`
+  let f = zoneFormats.get(key)
+  if (!f) {
+    const base: Intl.DateTimeFormatOptions = { timeZone: tz }
+    const opts: Intl.DateTimeFormatOptions =
+      style === 'time'
+        ? { ...base, hour: '2-digit', minute: '2-digit', hourCycle: 'h23' }
+        : style === 'date'
+          ? { ...base, month: 'short', day: 'numeric' }
+          : style === 'weekday-date'
+            ? {
+                ...base,
+                weekday: 'short',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hourCycle: 'h23',
+              }
+            : {
+                ...base,
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                hourCycle: 'h23',
+              }
+    f = new Intl.DateTimeFormat('en-US', opts)
+    zoneFormats.set(key, f)
+  }
+  return f.format(new Date(instant))
+}

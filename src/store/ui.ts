@@ -4,7 +4,17 @@ export type Route = 'dashboard' | 'journal' | 'calendar' | 'calculators' | 'stud
 export const ROUTES: Route[] = ['dashboard', 'journal', 'calendar', 'calculators', 'study']
 
 export type SettingsTab =
-  'themes' | 'colours' | 'background' | 'glass' | 'cursor' | 'buttons' | 'type' | 'profiles'
+  | 'accounts'
+  | 'symbols'
+  | 'data'
+  | 'themes'
+  | 'colours'
+  | 'background'
+  | 'glass'
+  | 'cursor'
+  | 'buttons'
+  | 'type'
+  | 'profiles'
 
 function routeFromHash(): Route {
   const h = window.location.hash.replace(/^#\/?/, '') as Route

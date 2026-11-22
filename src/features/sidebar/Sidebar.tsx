@@ -7,10 +7,11 @@ import { Card } from '@/components/ui/Card'
 import { Checkbox } from '@/components/ui/controls'
 import { Drawer } from '@/components/ui/Drawer'
 import { stagger } from '@/components/motion'
-import { dateKey, formatCurrency } from '@/lib/format'
+import { dateKey, formatCurrency, formatInZone } from '@/lib/format'
 import { getDay, todayKey, useJournal, type ListItem } from '@/store/journal'
 import { useSettings } from '@/store/settings'
-import { useTrades } from '@/store/trades'
+import { useTimezone, useTradeList } from '@/data/useTradeData'
+import { tradeTime } from '@/lib/finance/metrics'
 import { useUi } from '@/store/ui'
 import { format, subDays } from 'date-fns'
 
@@ -248,11 +249,12 @@ function RulesCard() {
 }
 
 function RecentTrades() {
-  const trades = useTrades((s) => s.trades)
+  const trades = useTradeList()
+  const tz = useTimezone()
   const hidden = useSettings((s) => s.hideBalances)
   const openTrade = useUi((s) => s.openTrade)
   const recent = useMemo(
-    () => [...trades].sort((a, b) => b.openedAt.localeCompare(a.openedAt)).slice(0, 5),
+    () => [...trades].sort((a, b) => tradeTime(b).localeCompare(tradeTime(a))).slice(0, 5),
     [trades],
   )
   return (
@@ -274,7 +276,7 @@ function RecentTrades() {
                   />
                   <span className="truncate font-medium">{t.symbol}</span>
                   <span className="text-xs text-muted">
-                    {format(new Date(t.openedAt), 'MMM d')}
+                    {formatInZone(tradeTime(t), tz, 'date')}
                   </span>
                 </span>
                 <span className={`tabular text-sm ${t.pnl >= 0 ? 'text-pos' : 'text-neg'}`}>
