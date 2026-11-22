@@ -2,6 +2,7 @@ import { buildTrades } from '../src/lib/mt5/buildTrades.js'
 import { mapSymbol } from '../src/lib/mt5/symbols.js'
 import { isTradeDeal, type Mt5Deal } from '../src/lib/mt5/types.js'
 import { assertOrigin, bearer, HttpError, json, readJson } from './http.js'
+import type { MetaApi } from './metaapi.js'
 import { generateSyncKey, hashSyncKey, isWellFormedKey, keyDisplayPrefix } from './keys.js'
 import { RateLimiter } from './rateLimit.js'
 import {
@@ -21,6 +22,10 @@ export interface Deps {
   apiUrl: string
   now?: () => Date
   limits?: { sync: RateLimiter; heartbeat: RateLimiter; user: RateLimiter }
+  /** MetaApi client for password connections; null when METAAPI_TOKEN is not set. */
+  metaapi?: MetaApi | null
+  /** Vercel Cron sends `Authorization: Bearer <CRON_SECRET>`. */
+  cronSecret?: string
 }
 
 const defaultLimits = {
@@ -29,16 +34,21 @@ const defaultLimits = {
   user: new RateLimiter(30, 60_000),
 }
 
-type Handler = (req: Request, deps: Deps) => Promise<Response>
+export type Handler = (req: Request, deps: Deps) => Promise<Response>
 
 /** Wraps a handler with error handling; dependencies may be null when env vars are missing. */
-export function route(handler: Handler, getDeps: () => Deps | null, allowedFallback: string[]) {
+export function route(
+  handler: Handler,
+  getDeps: () => Deps | null,
+  allowedFallback: string[],
+  method: 'POST' | 'GET' = 'POST',
+) {
   return async (req: Request): Promise<Response> => {
     const deps = getDeps()
     const allowed = deps?.allowedOrigins ?? allowedFallback
     try {
       if (!deps) throw new HttpError(503, 'Sync is not configured on this deployment yet')
-      if (req.method !== 'POST') throw new HttpError(405, 'Use POST')
+      if (req.method !== method) throw new HttpError(405, `Use ${method}`)
       assertOrigin(req, allowed)
       return await handler(req, deps)
     } catch (e) {
@@ -209,7 +219,7 @@ export const handleHeartbeat: Handler = async (req, deps) => {
   })
 }
 
-async function signedInUser(req: Request, deps: Deps): Promise<string> {
+export async function signedInUser(req: Request, deps: Deps): Promise<string> {
   const userId = await deps.store.userFromToken(bearer(req))
   if (!userId) throw new HttpError(401, 'Session expired. Sign in again.')
   const wait = (deps.limits?.user ?? defaultLimits.user).check(
@@ -220,7 +230,7 @@ async function signedInUser(req: Request, deps: Deps): Promise<string> {
   return userId
 }
 
-async function assertOwner(deps: Deps, accountId: string, userId: string) {
+export async function assertOwner(deps: Deps, accountId: string, userId: string) {
   const owner = await deps.store.accountOwner(accountId)
   // Same response for "missing" and "not yours" so ids cannot be probed.
   if (owner !== userId) throw new HttpError(404, 'Account not found')

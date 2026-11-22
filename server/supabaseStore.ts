@@ -1,7 +1,17 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import type { SymbolOverrides } from '../src/lib/mt5/symbols.js'
 import type { Mt5Deal } from '../src/lib/mt5/types.js'
-import type { AccountPatch, CreatedKey, KeyRecord, SyncStore, TradeRow } from './store.js'
+import type {
+  AccountPatch,
+  CreatedKey,
+  KeyRecord,
+  PullAccount,
+  SyncStore,
+  TradeRow,
+} from './store.js'
+
+const PULL_COLUMNS =
+  'id, user_id, connection_type, metaapi_account_id, metaapi_region, connection_state, last_pull_at, last_deal_time, created_at'
 
 const PAGE = 1000
 
@@ -265,5 +275,29 @@ export class SupabaseStore implements SyncStore {
         .is('revoked_at', null),
       'revokeKeys',
     )
+  }
+
+  async pullAccount(accountId: string): Promise<PullAccount | null> {
+    const row = check(
+      await this.db.from('accounts').select(PULL_COLUMNS).eq('id', accountId).maybeSingle(),
+      'pullAccount',
+    )
+    return (row as PullAccount | null) ?? null
+  }
+
+  async listPasswordAccounts(): Promise<PullAccount[]> {
+    const rows = check(
+      await this.db
+        .from('accounts')
+        .select(PULL_COLUMNS)
+        .eq('connection_type', 'metaapi')
+        .not('metaapi_account_id', 'is', null),
+      'listPasswordAccounts',
+    )
+    return (rows as PullAccount[] | null) ?? []
+  }
+
+  async deleteAccount(accountId: string) {
+    check(await this.db.from('accounts').delete().eq('id', accountId), 'deleteAccount')
   }
 }

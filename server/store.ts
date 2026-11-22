@@ -23,6 +23,27 @@ export interface AccountPatch {
   last_heartbeat_at?: string
   ea_version?: string | null
   resync_requested_at?: null
+  connection_type?: 'ea' | 'metaapi'
+  metaapi_account_id?: string | null
+  metaapi_region?: string | null
+  connection_state?: 'connecting' | 'connected' | 'error' | 'disconnected'
+  connection_error?: string | null
+  investor_mode?: boolean | null
+  last_pull_at?: string
+  last_deal_time?: string | null
+}
+
+/** What the password-connection (MetaApi) sync needs to know about an account. */
+export interface PullAccount {
+  id: string
+  user_id: string
+  connection_type: 'ea' | 'metaapi'
+  metaapi_account_id: string | null
+  metaapi_region: string | null
+  connection_state: string | null
+  last_pull_at: string | null
+  last_deal_time: string | null
+  created_at: string
 }
 
 export interface TradeRow extends BuiltTrade {
@@ -62,4 +83,7 @@ export interface SyncStore {
   ): Promise<CreatedKey>
   revokeKey(keyId: string, at: string): Promise<void>
   revokeKeysForAccount(accountId: string, at: string): Promise<void>
+  pullAccount(accountId: string): Promise<PullAccount | null>
+  listPasswordAccounts(): Promise<PullAccount[]>
+  deleteAccount(accountId: string): Promise<void>
 }

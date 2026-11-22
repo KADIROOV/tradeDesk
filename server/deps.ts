@@ -1,5 +1,6 @@
 import type { Deps } from './handlers.js'
 import { DEFAULT_ORIGINS } from './http.js'
+import { createMetaApi } from './metaapi.js'
 import { SupabaseStore } from './supabaseStore.js'
 
 let cached: Deps | null | undefined
@@ -29,6 +30,8 @@ export function productionDeps(): Deps | null {
     pepper,
     allowedOrigins: allowedOrigins(),
     apiUrl: process.env.PUBLIC_APP_URL ?? 'https://tradezdesk.vercel.app',
+    metaapi: process.env.METAAPI_TOKEN ? createMetaApi(process.env.METAAPI_TOKEN) : null,
+    cronSecret: process.env.CRON_SECRET,
   }
   return cached
 }

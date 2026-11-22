@@ -1,7 +1,14 @@
 import { randomUUID } from 'node:crypto'
 import type { SymbolOverrides } from '../src/lib/mt5/symbols.js'
 import type { Mt5Deal } from '../src/lib/mt5/types.js'
-import type { AccountPatch, CreatedKey, KeyRecord, SyncStore, TradeRow } from './store.js'
+import type {
+  AccountPatch,
+  CreatedKey,
+  KeyRecord,
+  PullAccount,
+  SyncStore,
+  TradeRow,
+} from './store.js'
 
 interface Account {
   id: string
@@ -43,9 +50,46 @@ export class MemoryStore implements SyncStore {
       login: null,
       server: null,
       resync_requested_at: null,
+      connection_type: 'ea',
+      metaapi_account_id: null,
+      metaapi_region: null,
+      connection_state: null,
+      last_pull_at: null,
+      last_deal_time: null,
+      created_at: new Date().toISOString(),
       ...extra,
     })
     return id
+  }
+
+  private asPull(a: Account): PullAccount {
+    return {
+      id: a.id,
+      user_id: a.user_id,
+      connection_type: a.connection_type === 'metaapi' ? 'metaapi' : 'ea',
+      metaapi_account_id: (a.metaapi_account_id as string | null) ?? null,
+      metaapi_region: (a.metaapi_region as string | null) ?? null,
+      connection_state: (a.connection_state as string | null) ?? null,
+      last_pull_at: (a.last_pull_at as string | null) ?? null,
+      last_deal_time: (a.last_deal_time as string | null) ?? null,
+      created_at: (a.created_at as string | undefined) ?? new Date(0).toISOString(),
+    }
+  }
+  async pullAccount(accountId: string) {
+    const a = this.accounts.get(accountId)
+    return a ? this.asPull(a) : null
+  }
+  async listPasswordAccounts() {
+    return [...this.accounts.values()]
+      .filter((a) => a.connection_type === 'metaapi' && a.metaapi_account_id)
+      .map((a) => this.asPull(a))
+  }
+  async deleteAccount(accountId: string) {
+    this.accounts.delete(accountId)
+    for (const k of [...this.deals.keys()]) if (k.startsWith(`${accountId}:`)) this.deals.delete(k)
+    for (const k of [...this.trades.keys()])
+      if (k.startsWith(`${accountId}:`)) this.trades.delete(k)
+    for (const [id, key] of this.keys) if (key.account_id === accountId) this.keys.delete(id)
   }
 
   async findKeyByHash(hash: string): Promise<KeyRecord | null> {

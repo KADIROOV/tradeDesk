@@ -261,6 +261,19 @@ describe('accounts: server-owned columns', () => {
       ]),
     ).toBe(true)
   })
+  it('owner cannot change the MT5 connection columns', async () => {
+    await asUser(A)
+    expect(
+      await rejects(`update public.accounts set metaapi_account_id = 'x' where id = $1`, [
+        accountA,
+      ]),
+    ).toBe(true)
+    expect(
+      await rejects(`update public.accounts set connection_state = 'connected' where id = $1`, [
+        accountA,
+      ]),
+    ).toBe(true)
+  })
   it('owner can create an account only for themselves', async () => {
     await asUser(A)
     expect(

@@ -7,11 +7,7 @@ const finite = z.number()
 const ticket = z.number().int().nonnegative().max(Number.MAX_SAFE_INTEGER)
 // Strip ASCII control characters (code points below 0x20).
 const stripControl = (s: string) => [...s].filter((c) => c.charCodeAt(0) >= 0x20).join('')
-const shortText = (max: number) =>
-  z
-    .string()
-    .max(max)
-    .transform(stripControl)
+const shortText = (max: number) => z.string().max(max).transform(stripControl)
 
 export const DealSchema = z.object({
   ticket: ticket.refine((v) => v > 0, 'ticket must be positive'),
