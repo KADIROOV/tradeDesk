@@ -1,4 +1,4 @@
-{
+﻿{
   "compilerOptions": {
     "tsBuildInfoFile": "./node_modules/.tmp/tsconfig.server.tsbuildinfo",
     "target": "es2023",
@@ -15,5 +15,5 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["api", "server", "supabase/tests", "mt5/**/*.ts", "src/lib/mt5"]
+  "include": ["api", "server", "scripts", "supabase/tests", "mt5/**/*.ts", "src/lib/mt5"]
 }

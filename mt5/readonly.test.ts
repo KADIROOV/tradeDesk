@@ -43,6 +43,18 @@ describe('TradeDeskSync.mq5 is strictly read-only', () => {
 
   it('reads only server, currency and company strings from the account', () => {
     const props = [...source.matchAll(/AccountInfoString\((\w+)\)/g)].map((m) => m[1])
-    expect(new Set(props)).toEqual(new Set(['ACCOUNT_SERVER', 'ACCOUNT_CURRENCY', 'ACCOUNT_COMPANY']))
+    expect(new Set(props)).toEqual(
+      new Set(['ACCOUNT_SERVER', 'ACCOUNT_CURRENCY', 'ACCOUNT_COMPANY']),
+    )
+  })
+})
+
+describe('published download', () => {
+  it('public/downloads/TradeDeskSync.mq5 matches the source', () => {
+    const published = readFileSync(
+      join(process.cwd(), 'public', 'downloads', 'TradeDeskSync.mq5'),
+      'utf8',
+    )
+    expect(published.replace(/\r\n/g, '\n')).toBe(raw.replace(/\r\n/g, '\n'))
   })
 })

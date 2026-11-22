@@ -1,4 +1,4 @@
-# TradeDesk
+﻿# TradeDesk
 
 A calm, glass-style trading journal and toolkit for retail traders. Journal trades, read your stats, see your month as a P&L heatmap, size positions properly and study from a curated video library — with a deep, instant theme system.
 
@@ -16,6 +16,153 @@ A calm, glass-style trading journal and toolkit for retail traders. Journal trad
 - **Strategy sidebar**: a pre-market plan (markdown), a daily checklist, a session-rules tracker with 7-day history, and recent trades.
 - **Themes**: 8 presets, accent/profit/loss colours, your own image or video background, 10 generated backgrounds, glass controls, cursor and button styles, type scale and density, saved profiles, and JSON import/export.
 - **Polish**: spring page transitions, count-ups, keyboard shortcuts, PWA install and offline use, a contrast guard for bright backgrounds, and respect for `prefers-reduced-motion`.
+
+## Automatic MetaTrader 5 sync
+
+With an account, TradeDesk syncs closed trades, balance and equity from MetaTrader 5. You trade, and the Dashboard, Journal and Calendar update by themselves within seconds. You can still add notes, tags, emotions, a rating, rules and screenshots afterwards. Manual logging still works for other brokers.
+
+```
+MT5 terminal ──(EA: TradeDeskSync, read-only)──HTTPS──▶ /api/mt5/sync, /api/mt5/heartbeat (Vercel)
+                                                              │ service role, zod-validated
+                                                              ▼
+                     Browser ◀──Realtime──── Supabase Postgres (RLS) ── deals_raw → trades, accounts
+```
+
+- **EA** (`mt5/TradeDeskSync.mq5`): reads deal history and account info, converts XM server time (GMT+2/+3) to UTC, and queues deals on disk. It sends batches with retry and backoff, and sends a heartbeat every 30 s. It contains no trading functions. See [`mt5/README.md`](mt5/README.md).
+- **API** (`api/`, logic in `server/`): authenticates the sync key, stores every raw deal (idempotent per ticket), rebuilds trades for the affected positions, and updates the account snapshot.
+- **Trade building** (`src/lib/mt5/buildTrades.ts`): deals are grouped by `POSITION_ID`.
+  - It handles partial closes, scale-ins, close-by, hedging and netting.
+  - On netting accounts, a reversal (`DEAL_ENTRY_INOUT`) splits one position into two legs.
+  - Open price is the volume-weighted average of entries; close price is the volume-weighted average of exits.
+  - Net P&L is the sum of profit, commission, swap and fee across the position's deals.
+  - R uses the initial SL. Trades without a stop are marked "R unknown" and left out of average R.
+- **Balance**: deposits, withdrawals and credit are recorded but never counted as P&L. Return % is trading P&L ÷ (starting balance + deposits − withdrawals).
+- **Days**: timestamps are stored in UTC. The calendar puts each trade on the day it closed in your timezone (default `Asia/Tashkent`, set in Settings → Data & time).
+- **Symbols**: XM names such as `GOLD`, `US100Cash` and `EURUSDm#` map to standard names and groups (Gold, Nasdaq, FX, Indices, Crypto). You can override them in Settings → Symbols.
+
+### Setting up the backend
+
+1. Create a Supabase project, then link and push the migrations:
+   ```bash
+   npx supabase login
+   npx supabase link --project-ref <ref>
+   npx supabase db push            # applies supabase/migrations
+   npx supabase config push        # auth site URL + redirect URLs from supabase/config.toml
+   ```
+2. Set the environment variables (see `.env.example`) in Vercel:
+   ```bash
+   vercel env add VITE_SUPABASE_URL production
+   vercel env add VITE_SUPABASE_ANON_KEY production
+   vercel env add SUPABASE_URL production
+   vercel env add SUPABASE_SERVICE_ROLE_KEY production   # server only
+   vercel env add SYNC_KEY_PEPPER production             # openssl rand -base64 48
+   vercel env add ALLOWED_ORIGINS production             # https://tradezdesk.vercel.app
+   ```
+3. Deploy: `vercel --prod`. Without these variables the site keeps running fully on-device, and `/api` answers `503`.
+
+### Data model
+
+| Table                | Purpose                                                                                                                          |
+| -------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
+| `profiles`           | Display name, timezone, and synced settings (theme, specs, symbol map, journal notes)                                            |
+| `accounts`           | One row per MT5 login: broker, server, currency, leverage, starting balance, live balance and equity, last sync and heartbeat    |
+| `sync_keys`          | `key_hash` (HMAC-SHA256 with a server pepper), display prefix, last used, revoked                                                |
+| `deals_raw`          | Every MT5 deal as received (`UNIQUE(account_id, deal_ticket)`), kept for audit and re-processing                                 |
+| `trades`             | One row per position leg (`UNIQUE(account_id, position_id, leg)`): broker numbers plus journal fields, `source` ∈ mt5/manual/csv |
+| `daily_stats` (view) | Per account and day, in the owner's timezone: net P&L, trades, wins, losses, deposits, withdrawals, balance at close             |
+
+Row Level Security is enabled on every table. Column grants and a trigger stop the browser from changing broker numbers on MT5 trades. These rules are tested against real Postgres in `supabase/tests/rls.test.ts`.
+
+### API
+
+All endpoints accept `POST` with JSON only, and validate bodies with zod.
+
+#### `POST /api/mt5/sync`
+
+Header: `X-Sync-Key: tdk_…`. Body: an account snapshot plus up to 500 deals. Times are UTC epoch seconds.
+
+```bash
+curl -X POST https://tradezdesk.vercel.app/api/mt5/sync \
+  -H "Content-Type: application/json" -H "X-Sync-Key: $SYNC_KEY" \
+  -d '{"account":{"login":51234567,"server":"XMGlobal-MT5 7","currency":"USD","leverage":500,"balance":10492,"equity":10510},
+       "deals":[
+        {"ticket":9002,"order":2,"position_id":501,"time":1772442000,"type":0,"entry":0,"symbol":"GOLD","volume":0.5,"price":2650,"profit":0,"commission":-3.5,"swap":0,"fee":0,"sl":2640,"tp":2670,"magic":0,"comment":""},
+        {"ticket":9003,"order":3,"position_id":501,"time":1772442600,"type":1,"entry":1,"symbol":"GOLD","volume":0.5,"price":2660,"profit":500,"commission":-3.5,"swap":-1,"fee":0,"sl":2640,"tp":2670,"magic":0,"comment":"[tp]"}]}'
+```
+
+```json
+{
+  "ok": true,
+  "account_id": "…",
+  "received": 2,
+  "stored": 2,
+  "duplicates": 0,
+  "invalid": 0,
+  "trades_upserted": 1,
+  "closed_trades": 1,
+  "results": [
+    { "ticket": 9002, "status": "stored", "kind": "trade" },
+    { "ticket": 9003, "status": "stored", "kind": "trade" }
+  ]
+}
+```
+
+Sending the same deals again returns `"status": "duplicate"` and changes nothing. A bad item is reported as `"status": "invalid"` with a reason, and the valid items in the batch are still stored.
+
+| Status | Meaning                              |
+| ------ | ------------------------------------ |
+| `401`  | Unknown, malformed or revoked key    |
+| `409`  | Key belongs to a different MT5 login |
+| `413`  | Body too large                       |
+| `429`  | Rate limited (see `Retry-After`)     |
+| `503`  | Backend not configured               |
+
+#### `POST /api/mt5/heartbeat`
+
+This updates balance, equity and last-seen, which drive the **Connected / Waiting / Offline** chip. The response's `resync: true` tells the EA to re-send its history (set by **Re-sync from MT5** in the app).
+
+```bash
+curl -X POST https://tradezdesk.vercel.app/api/mt5/heartbeat \
+  -H "Content-Type: application/json" -H "X-Sync-Key: $SYNC_KEY" \
+  -d '{"account":{"login":51234567,"server":"XMGlobal-MT5 7","currency":"USD","balance":10492,"equity":10530},"ea_version":"1.0.0","queue_size":0}'
+```
+
+#### `POST /api/accounts/keys`
+
+Needs a signed-in session: `Authorization: Bearer <Supabase access token>`. Creates or revokes a sync key. The plain key is returned only once.
+
+```bash
+curl -X POST https://tradezdesk.vercel.app/api/accounts/keys -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"action":"create","account_id":"<uuid>","label":"MT5 EA","revoke_others":true}'
+curl -X POST https://tradezdesk.vercel.app/api/accounts/keys -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" \
+  -d '{"action":"revoke","key_id":"<uuid>"}'
+```
+
+#### `POST /api/accounts/recalculate`
+
+Needs a session. Rebuilds every MT5 trade of an account from `deals_raw`, applying the current symbol mapping. Journal fields are kept.
+
+```bash
+curl -X POST https://tradezdesk.vercel.app/api/accounts/recalculate -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" -d '{"account_id":"<uuid>"}'
+```
+
+### Testing the sync without trading
+
+- `npm run dev:api` starts an in-memory sync API on `http://localhost:3000` and prints a key.
+- `npm run test:sync -- --url <site> --key <test key>` runs the live integration test. It posts a batch, re-posts it with duplicates, and checks idempotency and totals.
+- `npm run sim:mt5 -- --url <site> --key <test key> --trades 10 --every 5` streams simulated trades like the EA does.
+- In the app, **Settings → Data & time → Simulate MT5 trades** sends 6 trades through the real API into a separate "Simulator" account.
+
+Use keys from a test account for these tools. The first sync binds a key to the MT5 login it sees.
+
+### Threat model (short)
+
+- **MT5 credentials never leave the terminal.** The EA reads only history and account info (login, server, currency, balance, equity), never passwords. It contains no trading functions, and a test fails the build if any appear.
+- **Sync keys** are 256-bit random values, stored as HMAC-SHA256 with a server-side pepper and shown once. They can be revoked, and are tied to one account and, after the first sync, to one MT5 login. A leaked key can only add deals to that account. It cannot read data, and it cannot touch other users.
+- **The server never trusts the client** for identity. The account and user come from the key. Bodies are validated with zod, capped at 500 deals and 1.5 MB, and string fields are length-limited and stripped of control characters.
+- **Database:** RLS is on every table, anonymous access is revoked, and the key hash is not readable. MT5 numbers are read-only for users (column grants plus a trigger). The service role key exists only in Vercel server env vars, never in the browser bundle.
+- **Browser calls:** CORS allows only `ALLOWED_ORIGINS`, and keys and recalculate need a valid Supabase session. Security headers are set in `vercel.json`.
+- **Known limits:** the rate limit is per serverless instance (best effort, not global). Someone with access to your MT5 terminal could read the key from the EA inputs; revoke it in Settings → Accounts if that happens.
 
 ## Setup
 
