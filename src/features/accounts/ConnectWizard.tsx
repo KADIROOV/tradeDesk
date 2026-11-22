@@ -1,4 +1,5 @@
 import { tr } from '@/i18n'
+import { eaSetFileText, utf16leWithBom } from '@/lib/mt5/setFile'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   Check,
@@ -244,6 +245,26 @@ export function ConnectWizard({
                 <>
                   <CopyField label={tr('wiz.keyLabel')} value={key.key} />
                   <CopyField label={tr('wiz.urlLabel')} value={host} />
+                  <div className="flex flex-col gap-2 rounded-[var(--radius-sm)] border border-accent/40 bg-accent/5 p-3 sm:flex-row sm:items-center">
+                    <p className="min-w-0 flex-1 text-xs">{tr('wiz.setHint')}</p>
+                    <Button
+                      size="sm"
+                      variant="primary"
+                      icon={<Download />}
+                      onClick={() => {
+                        const bytes = utf16leWithBom(eaSetFileText(host, key.key))
+                        const a = document.createElement('a')
+                        a.href = URL.createObjectURL(
+                          new Blob([bytes.slice().buffer], { type: 'application/octet-stream' }),
+                        )
+                        a.download = 'TradeDeskSync.set'
+                        a.click()
+                        URL.revokeObjectURL(a.href)
+                      }}
+                    >
+                      {tr('wiz.downloadSet')}
+                    </Button>
+                  </div>
                   <p className="rounded-[var(--radius-sm)] bg-accent/10 px-3 py-2 text-xs">
                     {tr('wiz.copyNow')}
                   </p>

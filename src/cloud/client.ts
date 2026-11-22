@@ -25,3 +25,6 @@ export const cloudEnabled = supabase !== null
 /** Base URL of the sync API (same origin as the app). */
 export const apiBase =
   typeof window !== 'undefined' ? window.location.origin : 'https://tradezdesk.vercel.app'
+
+/** Login + password connection needs a paid MetaApi token; hidden unless switched on. */
+export const passwordConnectEnabled = import.meta.env.VITE_PASSWORD_CONNECT === '1'

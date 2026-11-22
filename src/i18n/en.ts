@@ -466,7 +466,8 @@ export const en = {
   'wiz.downloadSrc': 'source (.mq5)',
   'wiz.step2': 'Allow the web address',
   'wiz.step3': 'Attach to one chart and paste the key',
-  'wiz.step3Body': 'Drag TradeDeskSync onto any single chart → Inputs:',
+  'wiz.step3Body':
+    'Drag TradeDeskSync onto any single chart → Inputs → Load (the .set file), or type:',
   'wiz.step4': 'Turn on Algo Trading',
   'wiz.step4Body':
     'The Algo Trading toolbar button must be green. The EA never trades; MT5 just needs this to run any EA. The chart corner shows “TradeDesk: connected”.',
@@ -627,6 +628,11 @@ export const en = {
   'acc.syncDone': 'Up to date: {n} new deals',
   'acc.masterWarning':
     'Connected with the main password. Reconnect with the investor password for read-only access.',
+  'wiz.downloadSet': 'Download settings file (.set)',
+  'wiz.setHint':
+    'Easiest: download this file. In MT5, when you attach the EA, open Inputs → Load and pick it. The key and address fill in by themselves.',
+  'auth.noPasswordEa':
+    'Your MT5 password is never needed: the TradeDesk EA in your terminal sends trades with a revocable key.',
 } as const
 
 export type MsgKey = keyof typeof en

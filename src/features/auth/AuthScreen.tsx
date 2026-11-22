@@ -1,3 +1,4 @@
+import { passwordConnectEnabled } from '@/cloud/client'
 import { LanguageSegmented } from '@/features/settings/LanguagePicker'
 import { tr } from '@/i18n'
 import { motion } from 'framer-motion'
@@ -149,7 +150,9 @@ export function AuthScreen() {
                     : tr('auth.emailLink')}
             </Button>
           </form>
-          <p className="mt-4 text-xs text-muted">{tr('auth.noPassword')}</p>
+          <p className="mt-4 text-xs text-muted">
+            {tr(passwordConnectEnabled ? 'auth.noPassword' : 'auth.noPasswordEa')}
+          </p>
         </section>
         <button
           type="button"

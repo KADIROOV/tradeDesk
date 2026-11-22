@@ -451,7 +451,8 @@ export const uz: Messages = {
   'wiz.downloadSrc': 'manba kodi (.mq5)',
   'wiz.step2': 'Veb-manzilga ruxsat bering',
   'wiz.step3': 'Bitta grafikka biriktiring va kalitni qoʻying',
-  'wiz.step3Body': 'TradeDeskSync ni istalgan grafikka torting → Kirish parametrlari:',
+  'wiz.step3Body':
+    'TradeDeskSync ni istalgan grafikka torting → Kirish parametrlari → Yuklash (.set fayli) yoki kiriting:',
   'wiz.step4': 'Algo savdoni yoqing',
   'wiz.step4Body':
     'Asboblar panelidagi «Algo Trading» tugmasi yashil boʻlishi kerak. Maslahatchi savdo qilmaydi — MT5 har qanday maslahatchini ishga tushirish uchun buni talab qiladi. Grafik burchagida «TradeDesk: connected» chiqadi.',
@@ -607,4 +608,9 @@ export const uz: Messages = {
   'acc.syncDone': 'Yangilandi: {n} ta yangi bitim',
   'acc.masterWarning':
     'Asosiy parol bilan ulangan. Faqat oʻqish uchun investor paroli bilan qayta ulang.',
+  'wiz.downloadSet': 'Sozlamalar faylini yuklab olish (.set)',
+  'wiz.setHint':
+    'Eng osoni: shu faylni yuklab oling. MT5 da maslahatchini biriktirayotganda «Kirish parametrlari» → «Yuklash» ni bosib, shu faylni tanlang. Kalit va manzil oʻzi kiradi.',
+  'auth.noPasswordEa':
+    'MT5 paroli kerak emas: terminalingizdagi TradeDesk maslahatchisi savdolarni bekor qilinadigan kalit bilan yuboradi.',
 }

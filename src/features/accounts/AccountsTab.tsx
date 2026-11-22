@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/Button'
 import { EmptyState } from '@/components/ui/controls'
 import { Modal } from '@/components/ui/Modal'
 import { toast } from '@/components/ui/toastStore'
-import { cloudEnabled } from '@/cloud/client'
+import { cloudEnabled, passwordConnectEnabled } from '@/cloud/client'
 import type { AccountRow } from '@/cloud/rows'
 import {
   pullNow,
@@ -271,7 +271,7 @@ export function AccountsTab() {
     null,
   )
   if (status !== 'signed-in') return <CloudRequired />
-  if (wizard && !wizard.accountId && !wizard.method)
+  if (wizard && !wizard.accountId && !wizard.method && passwordConnectEnabled)
     return (
       <section>
         <h3 className="mb-4 text-base font-semibold tracking-tight">{tr('wiz.methodTitle')}</h3>
@@ -319,7 +319,9 @@ export function AccountsTab() {
             ? tr('acc.newKey')
             : wizard.method === 'password'
               ? tr('wiz.methodPassword')
-              : tr('wiz.methodEa')}
+              : passwordConnectEnabled
+                ? tr('wiz.methodEa')
+                : tr('acc.connect')}
         </h3>
         {wizard.method === 'password' ? (
           <PasswordConnect onDone={() => setWizard(null)} />
