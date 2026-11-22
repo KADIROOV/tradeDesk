@@ -110,7 +110,7 @@ export default function CalendarPage() {
           <p className="label">{tr('cal.label')}</p>
           <h1 className="mt-1 text-3xl font-semibold tracking-tight">
             {fmtDate(month, 'LLLL')}{' '}
-            <span className="serif text-muted">{fmtDate(month, 'yyyy')}</span>
+            <span className="display text-muted">{fmtDate(month, 'yyyy')}</span>
           </h1>
         </div>
         <div className="flex w-full items-center gap-2 sm:w-auto">

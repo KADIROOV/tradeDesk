@@ -54,7 +54,6 @@ export function defaultTheme(presetId = 'midnight'): ThemeSettings {
     buttonSize: 'comfortable',
     fontScale: 1,
     density: 'spacious',
-    serifAccent: true,
     animations: true,
     contrastGuard: true,
   }
@@ -149,8 +148,6 @@ export function resolveTheme(theme: ThemeSettings): ResolvedTheme {
     '--bg-saturate': String(bg.saturation / 100),
     '--font-scale': String(clamp(theme.fontScale, 0.85, 1.2)),
     '--density': String(density),
-    '--font-serif': theme.serifAccent ? `'Instrument Serif', Georgia, serif` : 'inherit',
-    '--serif-style': theme.serifAccent ? 'italic' : 'normal',
   }
   return {
     vars,
@@ -218,7 +215,6 @@ export function sanitizeTheme(input: unknown): ThemeSettings {
     buttonSize: oneOf(o.buttonSize, ['compact', 'comfortable'] as const, 'comfortable'),
     fontScale: num(o.fontScale, 1, 0.85, 1.2),
     density: oneOf(o.density, ['compact', 'spacious'] as const, 'spacious'),
-    serifAccent: bool(o.serifAccent, true),
     animations: bool(o.animations, true),
     contrastGuard: bool(o.contrastGuard, true),
   }

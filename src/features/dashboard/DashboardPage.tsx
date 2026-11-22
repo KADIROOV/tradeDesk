@@ -134,7 +134,7 @@ function Hero({
       <div className="relative flex flex-wrap items-end justify-between gap-6">
         <div>
           <p className="text-sm text-muted">
-            {greeting}. <span className="serif text-fg">{tr('dash.tradePlan')}</span>
+            {greeting}. <span className="display text-fg">{tr('dash.tradePlan')}</span>
           </p>
           <div className="mt-4 flex items-center gap-2">
             <p className="label">{tr('dash.totalPnl')}</p>
@@ -147,7 +147,7 @@ function Hero({
             </IconButton>
           </div>
           <p
-            className={`serif mt-1 text-5xl leading-none tracking-tight sm:text-6xl ${total > 0 ? 'text-pos' : total < 0 ? 'text-neg' : 'text-fg'}`}
+            className={`display mt-1 text-5xl leading-none tracking-tight sm:text-6xl ${total > 0 ? 'text-pos' : total < 0 ? 'text-neg' : 'text-fg'}`}
           >
             <CountUp value={total} format={fmt} />
           </p>

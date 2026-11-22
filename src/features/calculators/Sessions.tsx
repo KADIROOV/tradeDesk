@@ -37,7 +37,9 @@ export function SessionsTool() {
         {ZONES.map((z) => (
           <Card key={z.id} padded="sm" lift>
             <p className="label">{z.label}</p>
-            <p className="tabular serif mt-1 text-3xl">{formatMinutes(minutesInZone(now, z.tz))}</p>
+            <p className="tabular display mt-1 text-3xl">
+              {formatMinutes(minutesInZone(now, z.tz))}
+            </p>
             <p className="text-xs text-muted">
               {new Intl.DateTimeFormat('en-GB', {
                 timeZone: z.tz,

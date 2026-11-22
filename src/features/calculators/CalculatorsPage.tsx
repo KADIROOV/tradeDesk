@@ -27,7 +27,7 @@ export default function CalculatorsPage() {
       <motion.div variants={fadeUp}>
         <p className="label">{tr('calc.label')}</p>
         <h1 className="mt-1 text-3xl font-semibold tracking-tight">
-          {tr('calc.title')} <span className="serif text-accent">{tr('calc.titleAccent')}</span>{' '}
+          {tr('calc.title')} <span className="display text-accent">{tr('calc.titleAccent')}</span>{' '}
           {tr('calc.titleEnd')}
         </h1>
       </motion.div>

@@ -120,7 +120,7 @@ export function Output({
     >
       <p className="label">{label}</p>
       <p
-        className={`tabular mt-1 font-semibold tracking-tight ${big ? 'serif text-4xl' : 'text-xl'} ${tone === 'pos' ? 'text-pos' : tone === 'neg' ? 'text-neg' : ''}`}
+        className={`tabular mt-1 font-semibold tracking-tight ${big ? 'display text-4xl' : 'text-xl'} ${tone === 'pos' ? 'text-pos' : tone === 'neg' ? 'text-neg' : ''}`}
       >
         {value}
       </p>

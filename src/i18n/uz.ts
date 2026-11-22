@@ -309,8 +309,8 @@ export const uz: Messages = {
   'cal.rulesChecklist': 'Qoidalar roʻyxati',
   'cal.kept': '{n}/{total} bajarildi',
 
-  'side.plan': 'Bozor ochilishidan oldingi reja',
-  'side.planAria': 'Bozor ochilishidan oldingi reja (Markdown)',
+  'side.plan': 'Savdodan oldingi reja',
+  'side.planAria': 'Savdodan oldingi reja (Markdown)',
   'side.checklist': 'Tekshiruv roʻyxati',
   'side.rulesKept': 'Qoidalarga amal qilish',
   'side.rules7': 'Soʻnggi 7 kunda qoidalarga amal qilish',

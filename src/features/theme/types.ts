@@ -42,7 +42,6 @@ export interface ThemeSettings {
   buttonSize: ButtonSize
   fontScale: number
   density: Density
-  serifAccent: boolean
   animations: boolean
   contrastGuard: boolean
 }

@@ -52,7 +52,8 @@ export default function StudyPage() {
         <div>
           <p className="label">{tr('study.label')}</p>
           <h1 className="mt-1 text-3xl font-semibold tracking-tight">
-            {tr('study.title')} <span className="serif text-accent">{tr('study.titleAccent')}</span>
+            {tr('study.title')}{' '}
+            <span className="display text-accent">{tr('study.titleAccent')}</span>
           </h1>
           <p className="mt-1 text-sm text-muted">
             {tr('study.progress', { w: watchedCount, n: all.length })}

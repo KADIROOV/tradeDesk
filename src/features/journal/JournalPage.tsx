@@ -318,7 +318,7 @@ function PageHeader({ count }: { count: number }) {
       <div>
         <p className="label">{tr('journal.label')}</p>
         <h1 className="mt-1 text-3xl font-semibold tracking-tight">
-          Every trade, <span className="serif text-accent">{tr('journal.titleAccent')}</span>
+          Every trade, <span className="display text-accent">{tr('journal.titleAccent')}</span>
         </h1>
       </div>
       <div className="flex flex-wrap gap-2">

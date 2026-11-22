@@ -796,15 +796,9 @@ function TypeTab() {
             onChange={(v) => setTheme({ fontScale: v / 100 })}
             format={(v) => `${v}%`}
           />
-          <Toggle
-            label="Serif accents"
-            description="Elegant italic serif for large numbers and headings."
-            checked={theme.serifAccent}
-            onChange={(serifAccent) => setTheme({ serifAccent })}
-          />
           <div className="glass pad">
             <p className="label">Total P&L</p>
-            <p className="serif mt-1 text-4xl text-pos">+$4,820.50</p>
+            <p className="display mt-1 text-4xl text-pos">+$4,820.50</p>
           </div>
         </div>
       </Section>

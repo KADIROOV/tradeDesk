@@ -60,7 +60,7 @@ export function AuthScreen() {
             {mode === 'signup' ? tr('auth.create') : tr('auth.welcome')}
           </h1>
           <p className="mt-1 text-sm text-muted">
-            {tr('auth.tagline')} <span className="serif text-fg">{tr('auth.justTrade')}</span>
+            {tr('auth.tagline')} <span className="display text-fg">{tr('auth.justTrade')}</span>
           </p>
           <Segmented
             label={tr('auth.method')}
