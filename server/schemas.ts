@@ -1,4 +1,4 @@
-﻿import { z } from 'zod'
+import { z } from 'zod'
 
 export const MAX_DEALS_PER_BATCH = 500
 export const MAX_BODY_BYTES = 1_500_000

@@ -1,4 +1,4 @@
-﻿import { DEAL_ENTRY, DEAL_TYPE, type Mt5Deal } from './types.js'
+import { DEAL_ENTRY, DEAL_TYPE, type Mt5Deal } from './types.js'
 
 /** Deterministic PRNG so simulations are reproducible. */
 function mulberry32(seed: number) {

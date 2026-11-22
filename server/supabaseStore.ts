@@ -1,4 +1,4 @@
-﻿import { createClient, type SupabaseClient } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import type { SymbolOverrides } from '../src/lib/mt5/symbols.js'
 import type { Mt5Deal } from '../src/lib/mt5/types.js'
 import type { AccountPatch, CreatedKey, KeyRecord, SyncStore, TradeRow } from './store.js'

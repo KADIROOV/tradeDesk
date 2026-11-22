@@ -1,4 +1,4 @@
-﻿import { addDays, format, isSameDay, startOfWeek } from 'date-fns'
+import { addDays, format, isSameDay, startOfWeek } from 'date-fns'
 import { motion } from 'framer-motion'
 import { Eye, EyeOff, Flame, PlugZap, Plus, Snowflake, Sparkles } from 'lucide-react'
 import { useCallback, useMemo, type ReactNode } from 'react'

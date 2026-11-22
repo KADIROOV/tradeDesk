@@ -1,4 +1,4 @@
-﻿# TradeDesk
+# TradeDesk
 
 A calm, glass-style trading journal and toolkit for retail traders. Journal trades, read your stats, see your month as a P&L heatmap, size positions properly and study from a curated video library — with a deep, instant theme system.
 

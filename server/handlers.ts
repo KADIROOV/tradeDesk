@@ -1,4 +1,4 @@
-﻿import { buildTrades } from '../src/lib/mt5/buildTrades.js'
+import { buildTrades } from '../src/lib/mt5/buildTrades.js'
 import { mapSymbol } from '../src/lib/mt5/symbols.js'
 import { isTradeDeal, type Mt5Deal } from '../src/lib/mt5/types.js'
 import { assertOrigin, bearer, HttpError, json, readJson } from './http.js'

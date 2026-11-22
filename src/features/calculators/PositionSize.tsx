@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { Card } from '@/components/ui/Card'
 import { Segmented } from '@/components/ui/controls'
 import { positionSize, tradePnl } from '@/lib/finance/position'

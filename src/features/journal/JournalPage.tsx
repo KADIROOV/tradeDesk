@@ -1,4 +1,4 @@
-﻿import { endOfWeek, format, startOfWeek } from 'date-fns'
+import { endOfWeek, format, startOfWeek } from 'date-fns'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   Download,

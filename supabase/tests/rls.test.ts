@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Row Level Security and privilege tests.
  * Runs every migration in supabase/migrations against an in-process Postgres
  * (PGlite) with minimal stand-ins for Supabase's auth/storage schemas.
