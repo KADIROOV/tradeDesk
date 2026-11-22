@@ -1,0 +1,22 @@
+{
+  "name": "TradeDesk — trading journal",
+  "short_name": "TradeDesk",
+  "description": "A calm, private trading journal, calculators and study library. Educational tool, not financial advice.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#070b14",
+  "theme_color": "#070b14",
+  "categories": ["finance", "productivity", "education"],
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" },
+    { "src": "favicon.svg", "sizes": "any", "type": "image/svg+xml" }
+  ],
+  "shortcuts": [
+    { "name": "Journal", "url": "./#/journal" },
+    { "name": "Calculators", "url": "./#/calculators" }
+  ]
+}
